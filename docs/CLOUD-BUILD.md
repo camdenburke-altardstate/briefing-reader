@@ -60,7 +60,8 @@ So this removes the "never compiled" risk. The checks that need a real iPad in `
 
 ## Notes
 
-- The workflow uses `macos-14`. If GitHub retires that image, change it to the newest `macos-` name. If the
+- The workflow uses `macos-latest`. (`macos-14` was tried first and GitHub no longer offered it; if `macos-latest` ever
+  fails the same way, set a specific newer `macos-` name.) If the
   step "Pick an iPad simulator" finds none, the Xcode on that image has no iPad runtime; the "Show the
   toolchain" step prints what is available.
 - Nothing in the workflow uses secrets, and it has read-only access to the repository.
