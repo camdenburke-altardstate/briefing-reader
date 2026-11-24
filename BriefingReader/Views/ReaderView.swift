@@ -538,7 +538,7 @@ struct PDFKitView: UIViewRepresentable {
         view.displaysPageBreaks = false
         view.pageShadowsEnabled = false
         view.backgroundColor = .clear
-        view.usePageViewController(true, withViewOptions: [.interPageSpacing: 8])
+        view.usePageViewController(true, withViewOptions: [UIPageViewController.OptionsKey.interPageSpacing: 8])
         if Features.pencilMarkup { view.pageOverlayViewProvider = context.coordinator }   // handwriting layers
         view.document = document
         // PDFKit ignores go(to:) until the view has a size, so the jump to the saved page is
