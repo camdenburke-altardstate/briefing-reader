@@ -28,6 +28,10 @@ final class ScreenshotTests: XCTestCase {
         sleep(1)
         let screenshot = app.screenshot()
         try? screenshot.pngRepresentation.write(to: URL(fileURLWithPath: "\(outDir)/\(name).png"))
+        // The app-window capture comes out rotated and cropped in landscape on the simulator, so the
+        // whole screen is saved as well. Compare the two and keep whichever is upright.
+        let whole = XCUIScreen.main.screenshot()
+        try? whole.pngRepresentation.write(to: URL(fileURLWithPath: "\(outDir)/\(name)-screen.png"))
         let attachment = XCTAttachment(screenshot: screenshot)
         attachment.name = name
         attachment.lifetime = .keepAlways
