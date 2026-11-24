@@ -94,7 +94,7 @@ struct ReaderView: View {
                         .id(spread)          // a fresh PDF view for each layout; the page is carried over
                         .readingTone(tone)
                         .overlay {
-                            if spread {
+                            if spread && page > 0 {   // not on the lone cover, which has no facing page
                                 // The soft shadow down the spine of an open book.
                                 LinearGradient(
                                     colors: [.clear, Color.black.opacity(0.10), .clear],
