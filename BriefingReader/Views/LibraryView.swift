@@ -266,7 +266,7 @@ private struct CollectionSection: View {
                 // Landscape: the agenda on the left, the materials beside it, like a meeting pack.
                 HStack(alignment: .top, spacing: 40) {
                     AgendaList(collection: collection, agenda: agenda, open: open)
-                        .frame(width: 380)
+                        .frame(width: 450)   // wide enough that titles and presenters do not break mid-word
                     grid(columns: 2)
                 }
             } else {
@@ -391,6 +391,8 @@ private struct AgendaRow: View {
                         Text(presenter)
                             .font(Brand.font(.book, 15, .subheadline))
                             .foregroundStyle(Brand.inkSecondary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.85)
                     }
                 }
                 Spacer()

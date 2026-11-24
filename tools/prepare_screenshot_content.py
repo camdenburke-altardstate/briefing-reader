@@ -45,13 +45,13 @@ def main(root):
             data["date"] = today.isoformat()
             agenda = data.get("agenda", [])
             times = [to_minutes(item.get("time")) for item in agenda]
-            if len(agenda) >= 2 and times[1] is not None:
-                shift = (now_minutes - 10) - times[1]      # item 2 started ten minutes ago
-                for item, minutes in zip(agenda, times):
-                    if minutes is not None:
-                        item["time"] = to_text(minutes + shift)
-                if times[0] is not None:
-                    data["time"] = to_text(times[0] + shift)
+            if len(agenda) >= 2:
+                # Even 30-minute steps so a late-evening run never piles items onto 11:59 PM:
+                # item 1 started 40 minutes ago, item 2 (NOW) ten minutes ago, item 3 is NEXT.
+                start = now_minutes - 40
+                for index, item in enumerate(agenda):
+                    item["time"] = to_text(start + 30 * index)
+                data["time"] = to_text(start)
         elif "Board" in title:
             data["date"] = (today + datetime.timedelta(days=19)).isoformat()
         meeting.write_text(json.dumps(data, indent=2), encoding="utf-8")
