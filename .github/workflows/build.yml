@@ -95,8 +95,23 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             2>&1 | tee ui.log
 
-      - name: List the screenshots
+      # The simulator hands the test a sideways, cropped picture in landscape. The whole-screen capture is
+      # complete but turned 90 degrees, so turn those upright and keep them under the plain names.
+      - name: Straighten the screenshots
         if: always()
+        continue-on-error: true
+        run: |
+          cd /tmp/BriefingShots 2>/dev/null || exit 0
+          for f in *-screen.png; do
+            [ -e "$f" ] || continue
+            base="${f%-screen.png}.png"
+            case "$f" in
+              *portrait*) ;;
+              *) sips -r 270 "$f" >/dev/null ;;
+            esac
+            mv -f "$f" "$base"
+          done
+          ls -1
         run: |
           {
             echo "## Screenshots taken"
@@ -114,9 +129,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: screenshots
-          path: |
-            /tmp/BriefingShots
-            UITestResults.xcresult
+          path: /tmp/BriefingShots
           if-no-files-found: ignore
           retention-days: 14
 

@@ -104,6 +104,7 @@ struct ReaderView: View {
                             }
                         }
                     footer(spread: spread)
+                        .opacity(chromeVisible && !penOn ? 0 : 1)   // the slider bar replaces it, no ghosting
                 }
                 .ignoresSafeArea(edges: .top)
 
@@ -538,7 +539,15 @@ struct PDFKitView: UIViewRepresentable {
         view.displaysPageBreaks = false
         view.pageShadowsEnabled = false
         view.backgroundColor = .clear
-        view.usePageViewController(true, withViewOptions: [UIPageViewController.OptionsKey.interPageSpacing: 8])
+        if spread {
+            // PDFKit's page-turning mode shows ONE page with a spine in two-up mode, which skips every
+            // other page (found by the cloud screenshot run). Two-up proper shows both pages; turning is
+            // by the edge taps and by swipes (see LockedPDFView.swipePaging).
+            view.usePageViewController(false)
+            view.swipePaging = true
+        } else {
+            view.usePageViewController(true, withViewOptions: [UIPageViewController.OptionsKey.interPageSpacing: 8])
+        }
         if Features.pencilMarkup { view.pageOverlayViewProvider = context.coordinator }   // handwriting layers
         view.document = document
         // PDFKit ignores go(to:) until the view has a size, so the jump to the saved page is
@@ -708,6 +717,7 @@ final class LockedPDFView: PDFView {
     var onCenterTap: (() -> Void)?
     var initialPage: PDFPage?
     var penMode = false      // while writing, taps do nothing: a resting palm must not turn the page
+    var swipePaging = false  // two-page spreads have no page-turning controller, so swipes turn the spread
     private var lastFitSize: CGSize = .zero
 
     override init(frame: CGRect) {
@@ -717,6 +727,24 @@ final class LockedPDFView: PDFView {
         tap.cancelsTouchesInView = false
         tap.allowedTouchTypes = [NSNumber(value: UITouch.TouchType.direct.rawValue)]   // a finger; not the Pencil
         addGestureRecognizer(tap)
+
+        for direction in [UISwipeGestureRecognizer.Direction.left, .right] {
+            let swipe = UISwipeGestureRecognizer(target: self, action: #selector(handleSwipe(_:)))
+            swipe.direction = direction
+            swipe.cancelsTouchesInView = false
+            swipe.allowedTouchTypes = [NSNumber(value: UITouch.TouchType.direct.rawValue)]
+            addGestureRecognizer(swipe)
+        }
+    }
+
+    @objc private func handleSwipe(_ gesture: UISwipeGestureRecognizer) {
+        guard swipePaging, !penMode else { return }
+        if scaleFactor > scaleFactorForSizeToFit * 1.05 { return }   // zoomed in: the swipe is a pan
+        if gesture.direction == .left {
+            if canGoToNextPage { goToNextPage(nil) }
+        } else {
+            if canGoToPreviousPage { goToPreviousPage(nil) }
+        }
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
