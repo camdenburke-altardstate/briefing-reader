@@ -60,8 +60,10 @@ So this removes the "never compiled" risk. The checks that need a real iPad in `
 
 ## Notes
 
-- The workflow uses `macos-latest`. (`macos-14` was tried first and GitHub no longer offered it; if `macos-latest` ever
-  fails the same way, set a specific newer `macos-` name.) If the
+- The workflow uses `macos-15-intel`. `macos-14` was tried first and GitHub no longer offered it. `macos-latest`
+  (Apple Silicon) then sat queued for 15 minutes and failed with "not acquired by Runner" because of capacity limits,
+  so the Intel pool is used. Compiling and unit tests work the same on Intel. If this label is retired, pick a
+  current `macos-` name from GitHub's runner list. If the
   step "Pick an iPad simulator" finds none, the Xcode on that image has no iPad runtime; the "Show the
   toolchain" step prints what is available.
 - Nothing in the workflow uses secrets, and it has read-only access to the repository.
