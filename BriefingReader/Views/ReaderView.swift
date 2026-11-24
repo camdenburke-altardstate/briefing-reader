@@ -704,7 +704,7 @@ struct PDFKitView: UIViewRepresentable {
 /// A PDFView with every way out removed: no selection menu (Copy / Look Up / Share) and no
 /// long-press. Taps work like an e-reader: the outer fifth of the screen turns the page, the middle
 /// shows the bar, and a tap on a link follows the link. When zoomed in, every tap is just "show the bar".
-final class LockedPDFView: PDFView, UIGestureRecognizerDelegate {
+final class LockedPDFView: PDFView {
     var onCenterTap: (() -> Void)?
     var initialPage: PDFPage?
     var penMode = false      // while writing, taps do nothing: a resting palm must not turn the page
@@ -724,7 +724,8 @@ final class LockedPDFView: PDFView, UIGestureRecognizerDelegate {
     override func canPerformAction(_ action: Selector, withSender sender: Any?) -> Bool { false }
     override var canBecomeFirstResponder: Bool { false }
 
-    func gestureRecognizer(
+    // PDFView already adopts UIGestureRecognizerDelegate, so this overrides its version.
+    override func gestureRecognizer(
         _ gestureRecognizer: UIGestureRecognizer,
         shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer
     ) -> Bool { true }

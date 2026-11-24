@@ -140,8 +140,7 @@ enum LibrarySearchEngine {
                 let context = selection.copy() as? PDFSelection
                 context?.extend(atStart: 30)
                 context?.extend(atEnd: 60)
-                let snippet = (context?.string ?? selection.string ?? text).replacingOccurrences(of: "
-", with: " ")
+                let snippet = (context?.string ?? selection.string ?? text).replacingOccurrences(of: "\n", with: " ")
                 return SearchHit(item: item, page: doc.index(for: page), snippet: snippet)
             }
         case .image, .video, .audio:
