@@ -112,6 +112,9 @@ jobs:
             mv -f "$f" "$base"
           done
           ls -1
+
+      - name: List the screenshots
+        if: always()
         run: |
           {
             echo "## Screenshots taken"
