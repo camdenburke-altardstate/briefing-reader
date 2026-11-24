@@ -15,11 +15,23 @@ The workflow file is `.github/workflows/build.yml`. On every push it does this:
 A second, fast job runs on Linux and checks that the kiosk profile is valid XML, the Python tools have no
 syntax errors, `project.yml` parses, and the documents contain no em dashes.
 
+## Screenshots
+
+After the unit tests, the same run starts the real app in an iPad simulator, loads the sample decks, and a UI test
+(`BriefingReaderUITests/ScreenshotTests.swift`) opens the main screens in landscape and portrait: the library, a
+two-page board book, a 320-page report, a slide deck, a photo, a video, Manage and Search. It saves 19 pictures.
+Find them on the run's page under **Artifacts > screenshots** (a zip, about 7 MB). Sample content is moved to
+today's date first (`tools/prepare_screenshot_content.py`) so the NOW and NEXT agenda tags show.
+
+How it gets the sample decks in: debug builds only read a `-seedFrom` folder at launch (`BriefingReader/App/DebugSeed.swift`).
+That file is compiled out of Release builds, so the iPad version has no such hook. A problem in this step never fails
+the build; you just get fewer pictures. The run takes about 16 minutes.
+
 ## What it proves, and what it does not
 
 | It proves | It does not prove |
 |---|---|
-| The Swift compiles with a current Xcode | The app looks right (no screenshots are taken) |
+| The Swift compiles with a current Xcode | Anything that needs a real Pencil, USB drive or kiosk profile |
 | The logic tests pass (agenda times, naming, PIN) | Pencil ink stays glued to the page when zoomed |
 | The project file is generated correctly | The kiosk lock, USB loading, battery, or video |
 | | An installable app. That needs your Apple signing |
