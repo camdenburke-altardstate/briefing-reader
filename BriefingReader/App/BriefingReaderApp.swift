@@ -12,7 +12,13 @@ struct BriefingReaderApp: App {
                 .tint(Brand.ink)
                 .preferredColorScheme(.light)
                 .statusBarHidden(true)
-                .task { Kiosk.lock() }   // scenePhase may not report the very first .active
+                .task {
+                    #if DEBUG
+                    DebugSeed.run()          // automated screenshot runs only; compiled out of Release
+                    store.refresh(force: true)
+                    #endif
+                    Kiosk.lock()             // scenePhase may not report the very first .active
+                }
                 .persistentSystemOverlays(.hidden)
                 .onChange(of: scenePhase) { phase in
                     if phase == .active {

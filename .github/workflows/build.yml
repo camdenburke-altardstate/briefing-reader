@@ -70,6 +70,56 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             2>&1 | tee test.log
 
+      # Screenshots: runs the real app in the simulator, opens the main screens and saves pictures.
+      # A problem here never fails the build above (continue-on-error), it just means fewer pictures.
+      - name: Prepare sample content for the screenshots
+        continue-on-error: true
+        run: |
+          rm -rf /tmp/BriefingSeed /tmp/BriefingShots
+          mkdir -p /tmp/BriefingShots
+          cp -R SampleDecks /tmp/BriefingSeed
+          python3 tools/prepare_screenshot_content.py /tmp/BriefingSeed
+
+      - name: Run the app and take screenshots
+        id: shots
+        continue-on-error: true
+        timeout-minutes: 25
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project BriefingReader.xcodeproj \
+            -scheme BriefingReaderUI \
+            -configuration Debug \
+            -destination "id=${{ steps.sim.outputs.id }}" \
+            -resultBundlePath UITestResults.xcresult \
+            CODE_SIGNING_ALLOWED=NO \
+            2>&1 | tee ui.log
+
+      - name: List the screenshots
+        if: always()
+        run: |
+          {
+            echo "## Screenshots taken"
+            echo '```'
+            (ls -1 /tmp/BriefingShots 2>/dev/null) || true
+            echo '```'
+            echo "## Screenshot run: test results"
+            echo '```'
+            (grep -E "Test Case .* (passed|failed)|error:|Executed [0-9]+ tests" ui.log 2>/dev/null | sed -E 's#^.*/BriefingReader#BriefingReader#' | sort -u | head -60) || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Keep the screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: |
+            /tmp/BriefingShots
+            UITestResults.xcresult
+          if-no-files-found: ignore
+          retention-days: 14
+
       - name: Write a short summary
         if: always()
         run: |
@@ -96,6 +146,7 @@ jobs:
           path: |
             build.log
             test.log
+            ui.log
           if-no-files-found: ignore
           retention-days: 14
 
@@ -112,7 +163,7 @@ jobs:
           xmllint --noout Profiles/*.mobileconfig
 
       - name: The Python tools have no syntax errors
-        run: python3 -m py_compile tools/make_sample_decks.py tools/make_demo_video.py
+        run: python3 -m py_compile tools/make_sample_decks.py tools/make_demo_video.py tools/prepare_screenshot_content.py
 
       - name: project.yml is valid YAML
         run: python3 -c "import yaml,sys; yaml.safe_load(open('project.yml')); print('project.yml parses')"

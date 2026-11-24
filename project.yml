@@ -57,3 +57,24 @@ targets:
       base:
         GENERATE_INFOPLIST_FILE: YES
         PRODUCT_BUNDLE_IDENTIFIER: com.altardstate.briefingreader.tests
+  BriefingReaderUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - BriefingReaderUITests
+    dependencies:
+      - target: BriefingReader
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.altardstate.briefingreader.uitests
+# A second scheme just for the screenshot run, so the unit-test scheme stays quick and strict.
+schemes:
+  BriefingReaderUI:
+    build:
+      targets:
+        BriefingReader: all
+        BriefingReaderUITests: [test]
+    test:
+      targets:
+        - BriefingReaderUITests
