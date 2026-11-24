@@ -1,0 +1,819 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Briefing Reader iPad Mockup</title>
+<style>
+  /* A browser mockup of the Briefing Reader screens at iPad size, opening the real sample files.
+     It imitates the app's layout and behavior. It is NOT the Swift app running, so it proves nothing
+     about compiling, PDFKit, AVKit, the file picker or Single App Mode. Pinch zoom and battery are not in it. */
+  :root { --ink:#363636; --ink2:#6B6B6B; --hair:#E3E1DE; --paper:#fff; --well:#F7F6F4; --backdrop:#F1F0EE; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; background: #bdbdbd; overflow: hidden;
+    font-family: Avenir, "Avenir Next", "Nunito Sans", "Segoe UI", system-ui, sans-serif; color: var(--ink); }
+  #toolbar { position: fixed; top: 8px; left: 8px; z-index: 50; display: flex; gap: 8px; align-items: center; font-size: 13px; color: #333; }
+  #toolbar button { font: inherit; padding: 5px 10px; border: 1px solid #888; background: #eee; border-radius: 6px; cursor: pointer; }
+  #stagewrap { position: absolute; inset: 0; display: grid; place-items: center; }
+  #frame { background: #1c1c1c; padding: 16px; border-radius: 40px; transform-origin: center center; position: absolute; left: 50%; top: 50%; margin-top: 18px; }
+  #screen { position: relative; overflow: hidden; background: var(--paper); border-radius: 22px; --cols: 4; }
+  #screen.port { --cols: 3; }
+  .view { position: absolute; inset: 0; }
+  .hidden { display: none !important; }
+  svg { width: 1em; height: 1em; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; vertical-align: -0.12em; }
+
+  /* ---------- Library ---------- */
+  #library { overflow-y: auto; padding: 40px 56px 56px; }
+  .port #library { padding: 32px 40px 48px; }
+  .head { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+  .head img { width: 300px; display: block; } .port .head img { width: 230px; }
+  .status { display: flex; gap: 10px; align-items: center; font-size: 14px; color: var(--ink2); }
+  .iconbtn { border: 0; background: none; font-size: 20px; width: 44px; height: 44px; color: inherit; cursor: pointer; border-radius: 8px; }
+  .iconbtn:active { opacity: .5; }
+  .mbtn { font: inherit; font-weight: 500; font-size: 15px; color: var(--ink); background: none; border: 1px solid var(--hair); padding: 8px 12px; cursor: pointer; white-space: nowrap; }
+  .rule { height: 1px; background: var(--hair); margin: 16px 0; }
+  .bar { display: flex; justify-content: space-between; align-items: baseline; }
+  .bar .t { font-weight: 500; font-size: 15px; letter-spacing: .23em; text-transform: uppercase; }
+  .bar .c { font-size: 15px; color: var(--ink2); }
+  .continue { display: flex; align-items: center; gap: 28px; padding: 24px; border: 1px solid var(--hair); margin-top: 36px; cursor: pointer; }
+  .continue:active, .card:active, .arow:active { opacity: .65; }
+  .continue .cv { width: 200px; height: 130px; background: var(--well); border: 1px solid var(--hair); display: grid; place-items: center; flex: none; }
+  .continue .cv canvas, .continue .cv img { max-width: 184px; max-height: 114px; border: 1px solid var(--hair); }
+  .continue .lbl { font-size: 12px; letter-spacing: .25em; color: var(--ink2); font-weight: 500; }
+  .continue h2 { margin: 8px 0; font-size: 24px; font-weight: 500; }
+  .continue .det { font-size: 15px; color: var(--ink2); }
+  .pb { height: 3px; background: var(--hair); margin-top: 10px; max-width: 360px; } .pb i { display: block; height: 100%; background: var(--ink); }
+  section.coll { margin-top: 44px; }
+  .sh { display: flex; align-items: baseline; gap: 16px; }
+  .sh h2 { margin: 0; font-size: 26px; font-weight: 500; }
+  .sh .sub { font-size: 16px; color: var(--ink2); margin-top: 6px; }
+  .tag { font-size: 11px; letter-spacing: .2em; font-weight: 500; padding: 4px 8px; border: 1px solid var(--ink); }
+  .tag.fill { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .note { color: var(--ink2); font-size: 16px; margin: 10px 0 0; }
+  .notesbtn { margin-left: auto; border: 0; background: none; font: inherit; font-weight: 500; font-size: 15px; cursor: pointer; color: var(--ink); }
+  .agenda { border: 1px solid var(--hair); margin: 22px 0 6px; }
+  .arow { display: flex; align-items: baseline; gap: 20px; padding: 16px 20px; border-bottom: 1px solid var(--hair); }
+  .arow:last-child { border-bottom: 0; }
+  .arow.now { background: var(--well); }
+  .arow .tm { width: 96px; font-weight: 500; font-size: 16px; font-variant-numeric: tabular-nums; flex: none; }
+  .arow .tt { font-weight: 500; font-size: 18px; } .arow .pr { color: var(--ink2); font-size: 15px; margin-top: 4px; }
+  .arow .sp { flex: 1; } .arow.go { cursor: pointer; }
+  /* Orientation: landscape puts the agenda beside the materials, portrait stacks them */
+  .split { display: block; }
+  .land .split { display: flex; gap: 40px; align-items: flex-start; }
+  .land .split .agenda { width: 380px; flex: none; }
+  .land .split .grid { flex: 1; grid-template-columns: repeat(2, 1fr); margin-top: 22px; }
+  .grid { display: grid; grid-template-columns: repeat(var(--cols), 1fr); gap: 44px 32px; margin-top: 28px; }
+  .card { cursor: pointer; }
+  .cover { position: relative; height: 200px; background: var(--well); border: 1px solid var(--hair); display: grid; place-items: center; }
+  .port .cover { height: 170px; }
+  .cover canvas, .cover img, .cover video { max-width: calc(100% - 28px); max-height: 172px; border: 1px solid var(--hair); background: #fff; }
+  .port .cover canvas, .port .cover img, .port .cover video { max-height: 142px; }
+  .cover .new { position: absolute; top: 8px; left: 8px; background: var(--ink); color: #fff; font-size: 10px; letter-spacing: .15em; padding: 3px 7px; font-weight: 500; }
+  .cover .play { position: absolute; font-size: 46px; color: rgba(255,255,255,.92); filter: drop-shadow(0 1px 4px rgba(0,0,0,.4)); }
+  .card .pb { max-width: none; margin: 12px 0 0; }
+  .card h3 { margin: 14px 0 4px; font-weight: 500; font-size: 19px; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .card p { margin: 0; font-size: 15px; color: var(--ink2); }
+  .empty { color: var(--ink2); font-weight: 300; font-size: 22px; text-align: center; padding: 100px 0; }
+  .empty button { margin-top: 24px; font: inherit; font-weight: 500; font-size: 18px; background: var(--ink); color: #fff; border: 0; padding: 14px 28px; cursor: pointer; }
+
+  /* ---------- Reader (PDF) ---------- */
+  #reader { background: var(--backdrop); touch-action: none; }
+  #pagearea { position: absolute; left: 0; right: 0; top: 0; bottom: 30px; display: grid; place-items: center; }
+  #pageholder { position: relative; display: flex; align-items: center; }
+  #pageholder .pg { position: relative; } #pageholder canvas { display: block; background: #fff; }
+  #pageholder .gutter { position: absolute; left: 50%; top: 0; bottom: 0; width: 46px; margin-left: -23px; background: linear-gradient(90deg, transparent, rgba(0,0,0,.10), transparent); pointer-events: none; }
+  .link { position: absolute; cursor: pointer; }
+  .ink { position: absolute; left: 0; top: 0; pointer-events: none; touch-action: none; }
+  #reader.pen .ink { pointer-events: auto; cursor: crosshair; }
+  #penbar { position: absolute; top: 12px; right: 16px; z-index: 8; display: flex; gap: 6px; align-items: center; background: rgba(255,255,255,.97); border: 1px solid var(--hair); padding: 6px 8px; border-radius: 10px; box-shadow: 0 4px 18px rgba(0,0,0,.18); }
+  #penbar button { font: inherit; font-size: 14px; border: 1px solid var(--hair); background: #fff; padding: 7px 10px; cursor: pointer; color: var(--ink); }
+  #penbar button.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+  #penbar .dot { width: 26px; height: 26px; border-radius: 50%; padding: 0; border: 2px solid #fff; box-shadow: 0 0 0 1px var(--hair); }
+  #penbar .dot.on { box-shadow: 0 0 0 2px var(--ink); background-clip: padding-box; }
+  #penbar .done { background: var(--ink); color: #fff; border-color: var(--ink); font-weight: 500; }
+  #foot { position: absolute; left: 0; right: 0; bottom: 0; height: 30px; display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--ink2); }
+  #foot .st { position: absolute; right: 24px; font-size: 12px; }
+  #ribbon { position: absolute; top: 0; right: 36px; font-size: 40px; color: var(--ink); pointer-events: none; }
+  #ribbon svg { fill: currentColor; }
+  .topbar, .botbar { position: absolute; left: 0; right: 0; background: rgba(255,255,255,.97); z-index: 5; }
+  .topbar { top: 0; padding: 8px 20px; border-bottom: 1px solid var(--hair); display: flex; align-items: center; }
+  .topbar .ttl { position: absolute; left: 290px; right: 290px; text-align: center; font-weight: 500; font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
+  .port .topbar .ttl { display: none; }   /* portrait: icons only, like Kindle */
+  .topbar .sp { flex: 1; }
+  .botbar { bottom: 0; padding: 14px 32px 16px; border-top: 1px solid var(--hair); }
+  .prev { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .prev canvas { height: 170px; border: 1px solid var(--hair); box-shadow: 0 2px 8px rgba(0,0,0,.14); background: #fff; }
+  .prev span { font-weight: 500; font-size: 15px; }
+  .sl { display: flex; align-items: center; gap: 14px; font-size: 14px; font-variant-numeric: tabular-nums; }
+  .sl input { flex: 1; accent-color: var(--ink); }
+  .slide-l { animation: sl .18s ease-out; } .slide-r { animation: sr .18s ease-out; }
+  @keyframes sl { from { transform: translateX(60px); opacity: .4 } to { transform: none; opacity: 1 } }
+  @keyframes sr { from { transform: translateX(-60px); opacity: .4 } to { transform: none; opacity: 1 } }
+
+  /* ---------- Gallery / player (dark) ---------- */
+  #gallery, #player { background: #111; color: #fff; }
+  #gallery .stage { position: absolute; inset: 0; display: grid; place-items: center; overflow: hidden; }
+  #gallery img { max-width: 100%; max-height: 100%; transition: transform .2s; user-select: none; -webkit-user-drag: none; }
+  .darkbar { position: absolute; left: 0; right: 0; top: 0; background: rgba(0,0,0,.6); padding: 8px 20px; display: flex; align-items: center; z-index: 5; color: #fff; }
+  .darkbar .ttl { position: absolute; left: 180px; right: 180px; text-align: center; font-weight: 500; font-size: 17px; pointer-events: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .gfoot { position: absolute; left: 0; right: 0; bottom: 10px; padding: 0 24px; display: flex; justify-content: space-between; font-size: 13px; color: rgba(255,255,255,.55); }
+  #player video { position: absolute; inset: 0; width: 100%; height: 100%; background: #000; }
+
+  /* ---------- Overlays ---------- */
+  #dim { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; z-index: 60; }
+  #sheet { position: absolute; inset: 0; background: rgba(0,0,0,.3); z-index: 30; }
+  #sheetbox { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); width: 600px; max-width: 92%; max-height: 88%; background: #fff; border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; color: var(--ink); }
+  .port #sheetbox { width: 620px; }
+  #sheetbox header { padding: 14px 20px; border-bottom: 1px solid var(--hair); display: flex; justify-content: space-between; align-items: center; font-weight: 500; }
+  #sheetbox header a { cursor: pointer; font-weight: 500; }
+  #sheetbody { overflow-y: auto; }
+  .sech { padding: 10px 20px 6px; font-size: 12px; letter-spacing: .15em; text-transform: uppercase; color: var(--ink2); background: var(--well); }
+  .row { display: flex; justify-content: space-between; gap: 12px; padding: 12px 20px; border-bottom: 1px solid var(--hair); cursor: pointer; }
+  .row:active { background: var(--well); } .row .pg { color: var(--ink2); font-variant-numeric: tabular-nums; }
+  .row .snip { color: var(--ink2); font-size: 15px; margin-top: 4px; }
+  #sheetbody textarea { width: 100%; height: 360px; border: 0; padding: 18px 20px; font: inherit; font-size: 19px; resize: none; outline: none; color: var(--ink); }
+  .sbar { display: flex; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--hair); }
+  .sbar input { flex: 1; font: inherit; font-size: 18px; border: 0; outline: none; }
+  /* Manage */
+  .mrow { display: flex; align-items: center; gap: 16px; padding: 14px 20px; border-bottom: 1px solid var(--hair); cursor: pointer; }
+  .mrow:active { background: var(--well); } .mrow.static { cursor: default; } .mrow.static:active { background: none; }
+  .mrow .mi { font-size: 26px; width: 40px; text-align: center; }
+  .mrow b { display: block; font-weight: 500; font-size: 18px; } .mrow small { color: var(--ink2); font-size: 15px; }
+  .mrow .mgrow { flex: 1; } .mrow .chev { color: var(--ink2); }
+  .mrow button, .linkbtn { font: inherit; font-size: 16px; font-weight: 500; background: none; border: 0; color: var(--ink); cursor: pointer; padding: 6px 4px; }
+  .red { color: #c0392b !important; }
+  .mfoot { margin: 0; padding: 10px 20px 16px; font-size: 14px; color: var(--ink2); }
+  .form { padding: 18px 20px; display: grid; gap: 14px; }
+  .form input[type=text], .form input[type=date], .form select, .form input[type=password] { font: inherit; font-size: 18px; padding: 10px 12px; border: 1px solid var(--hair); width: 100%; }
+  .form label.chk { display: flex; gap: 10px; align-items: center; font-size: 17px; }
+  .seg3 { display: flex; border: 1px solid var(--ink); border-radius: 7px; overflow: hidden; }
+  .seg3 button { flex: 1; padding: 9px 4px; border: 0; background: #fff; font: inherit; font-size: 14px; cursor: pointer; color: var(--ink); }
+  .seg3 button.on { background: var(--ink); color: #fff; }
+  .primary { font: inherit; font-weight: 500; font-size: 18px; background: var(--ink); color: #fff; border: 0; padding: 13px 20px; cursor: pointer; }
+  .primary:disabled { opacity: .35; cursor: default; }
+  .pinbox { text-align: center; padding: 36px 20px; display: grid; gap: 16px; justify-items: center; }
+  .pinbox input { width: 220px; text-align: center; font: inherit; font-size: 24px; padding: 10px; border: 1px solid var(--hair); }
+  #confirm { position: absolute; inset: 0; background: rgba(0,0,0,.35); z-index: 70; display: grid; place-items: center; }
+  #confirmbox { background: #fff; border-radius: 14px; padding: 24px; width: 440px; max-width: 90%; text-align: center; color: var(--ink); }
+  #confirmbox h3 { margin: 0 0 10px; font-size: 19px; font-weight: 500; } #confirmbox p { margin: 0 0 20px; font-size: 16px; color: var(--ink2); white-space: pre-line; }
+  #confirmbox .btns { display: flex; gap: 10px; justify-content: center; }
+  #confirmbox button { font: inherit; font-size: 17px; padding: 10px 20px; border: 1px solid var(--hair); background: #fff; cursor: pointer; }
+  #confirmbox button.danger { background: #c0392b; color: #fff; border-color: #c0392b; }
+  #work { position: absolute; inset: 0; background: rgba(0,0,0,.35); z-index: 70; display: grid; place-items: center; }
+  #workbox { background: #fff; padding: 28px; width: 380px; text-align: center; color: var(--ink); } #workbox progress { width: 100%; }
+  #pop { position: absolute; z-index: 65; background: #fff; color: var(--ink); border-radius: 12px; padding: 20px 24px; width: 340px; box-shadow: 0 6px 30px rgba(0,0,0,.28); }
+  #pop .r { display: flex; gap: 10px; align-items: center; } #pop input[type=range] { flex: 1; accent-color: var(--ink); }
+  #pop .seg { display: flex; margin-top: 18px; border: 1px solid var(--ink); border-radius: 7px; overflow: hidden; }
+  #pop .seg button { flex: 1; padding: 7px 0; border: 0; background: #fff; font: inherit; font-size: 14px; cursor: pointer; color: var(--ink); }
+  #pop .seg button.on { background: var(--ink); color: #fff; }
+</style>
+</head>
+<body>
+<div id="toolbar">
+  <button id="rot">Rotate</button>
+  <button id="reset">Reset progress, notes and bookmarks</button>
+  <button id="restore">Restore sample content</button>
+  <span>Mockup of the app screens, not the app itself. Drop PDFs, photos or videos on the iPad to add them (they stay in your browser).</span>
+</div>
+<input type="file" id="fin" multiple accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.heic,.mp4,.mov,.m4v,.mp3,.m4a,.wav" style="display:none">
+<input type="file" id="din" webkitdirectory style="display:none">
+<div id="stagewrap">
+  <div id="frame">
+    <div id="screen" class="land">
+      <!-- Library -->
+      <div id="library" class="view">
+        <div class="head"><img src="../../Brand/logo-charcoal.png" alt="Altar'd State"><div class="status"><span class="clock"></span><button class="iconbtn disp" aria-label="Display"></button><button class="iconbtn" id="openSearch" aria-label="Search all documents"></button><button class="mbtn" id="openManage"></button></div></div>
+        <div class="rule"></div>
+        <div class="bar"><span class="t">Executive Briefings</span><span class="c" id="count"></span></div>
+        <div id="cont"></div>
+        <div id="colls"></div>
+        <div class="empty hidden" id="empty">No briefing materials have been loaded.<br><button id="emptyAdd">Add files</button></div>
+      </div>
+      <!-- PDF reader -->
+      <div id="reader" class="view hidden">
+        <div id="pagearea"><div id="pageholder"></div></div>
+        <div id="ribbon" class="hidden"></div>
+        <div id="penbar" class="hidden"></div>
+        <div id="foot"><span id="footl"></span><span class="st clock"></span></div>
+        <div class="topbar hidden" id="rtop"></div>
+        <div class="botbar hidden" id="rbot"></div>
+      </div>
+      <!-- Gallery -->
+      <div id="gallery" class="view hidden">
+        <div class="stage" id="gstage"></div>
+        <div class="darkbar hidden" id="gtop"></div>
+        <div class="gfoot" id="gfoot"></div>
+      </div>
+      <!-- Player -->
+      <div id="player" class="view hidden">
+        <video id="vid" controls playsinline></video>
+        <div class="darkbar" id="ptop"></div>
+      </div>
+      <div id="dim"></div>
+      <div id="sheet" class="hidden"><div id="sheetbox"><header><span id="sheettitle"></span><a id="sheetdone">Done</a></header><div id="sheetbody"></div></div></div>
+      <div id="confirm" class="hidden"><div id="confirmbox"><h3 id="ctitle"></h3><p id="cbody"></p><div class="btns" id="cbtns"></div></div></div>
+      <div id="work" class="hidden"><div id="workbox"><progress id="wprog" value="0" max="1"></progress><p id="wtext"></p></div></div>
+      <div id="pop" class="hidden"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+(async () => {
+  const WORKER = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  const wtext = await (await fetch(WORKER)).text(); // a cross-origin worker is blocked from a local page, so wrap it
+  pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(new Blob([wtext], { type: 'text/javascript' }));
+
+  const $ = (id) => document.getElementById(id);
+  const screenEl = $('screen'), frame = $('frame');
+  let landscape = true;
+  const SIZE = () => landscape ? { w: 1024, h: 768 } : { w: 768, h: 1024 };
+  const ic = {
+    back: '<svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>',
+    list: '<svg viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>',
+    search: '<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l5 5"/></svg>',
+    mark: '<svg viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"/></svg>',
+    notes: '<svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13 7l4 4"/></svg>',
+    sun: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>',
+    pen: '<svg viewBox="0 0 24 24"><path d="M4 20l1-4L16 5l3 3L8 19z"/><path d="M14 7l3 3"/></svg>',
+    tray: '<svg viewBox="0 0 24 24"><path d="M4 13l2-8h12l2 8M4 13v6h16v-6M4 13h5l1 2h4l1-2h5"/></svg>',
+    file: '<svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M12 11v6M9 14h6"/></svg>',
+    folder: '<svg viewBox="0 0 24 24"><path d="M3 7h6l2 2h10v10H3z"/><path d="M12 12v5M9.5 14.5h5"/></svg>',
+    play: '<svg viewBox="0 0 24 24" style="fill:currentColor;stroke:none"><circle cx="12" cy="12" r="11" opacity=".95"/><path d="M10 8l6 4-6 4z" style="fill:#555"/></svg>',
+  };
+  document.querySelectorAll('.disp').forEach(b => b.innerHTML = ic.sun);
+  $('openManage').innerHTML = ic.tray + ' Manage';
+  $('openSearch').innerHTML = ic.search;
+
+  // ---------- storage (same idea as LibraryStore) ----------
+  const store = (k, d) => { try { return JSON.parse(localStorage.getItem(k) || 'null') ?? d; } catch (e) { return d; } };
+  const put = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+  let progress = store('sim2.progress', {});   // id -> {page, opened, flags}
+  let tone = store('sim2.tone', 'standard'), brightness = store('sim2.brightness', 1);
+  const saveProgress = () => put('sim2.progress', progress);
+  const clearNotes = (only) => Object.keys(localStorage).filter(k => k.startsWith('sim2.notes') && (!only || k === 'sim2.notes.' + only)).forEach(k => localStorage.removeItem(k));
+  $('reset').onclick = () => { progress = {}; put('sim2.progress', {}); clearNotes(); put('sim2.ink', {}); if (typeof ink !== 'undefined') ink = {}; renderLibrary(); };
+  $('restore').onclick = () => { put('sim2.wiped', false); location.reload(); };
+
+  // ---------- agenda logic (port of AgendaLogic in ContentModel.swift) ----------
+  function minutes(text) {
+    if (text == null) return null;
+    let s = String(text).trim().toLowerCase(); if (!s) return null;
+    let pm = false, am = false;
+    if (s.endsWith('pm')) { pm = true; s = s.slice(0, -2); } else if (s.endsWith('am')) { am = true; s = s.slice(0, -2); }
+    const parts = s.trim().split(':').filter(p => p !== '');
+    if (!parts.length || !/^-?\d+$/.test(parts[0])) return null;
+    let hour = parseInt(parts[0], 10), minute = 0;
+    if (parts.length > 1) { if (!/^-?\d+$/.test(parts[1])) return null; minute = parseInt(parts[1], 10); }
+    if (!(minute >= 0 && minute < 60 && hour >= 0 && hour <= 24)) return null;
+    if (pm && hour < 12) hour += 12; if (am && hour === 12) hour = 0;
+    return hour * 60 + minute;
+  }
+  function position(times, now) {
+    let n = null, x = null;
+    times.forEach((t, i) => { if (t == null) return; if (t <= now) n = i; else if (x == null) x = i; });
+    return { now: n, next: x };
+  }
+  const dayOf = (s) => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || ''); return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null; };
+  const nowDate = () => (window.__fakeNow ? new Date(window.__fakeNow) : new Date());   // the demo video pins the clock
+  const startOfToday = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
+  const isToday = (day) => day && day.getTime() === startOfToday().getTime();
+  function sortColls(list) {
+    const t0 = startOfToday().getTime();
+    const key = (c) => { if (!c.folder) return { r: 3 }; const d = dayOf(c.meeting && c.meeting.date); if (!d) return { r: 2, t: c.title }; return { r: d.getTime() >= t0 ? 0 : 1, d: d.getTime(), t: c.title }; };
+    return list.sort((a, b) => { const ka = key(a), kb = key(b); if (ka.r !== kb.r) return ka.r - kb.r; if (ka.d != null && kb.d != null && ka.d !== kb.d) return ka.r === 0 ? ka.d - kb.d : kb.d - ka.d; return (ka.t || '').localeCompare(kb.t || '', undefined, { numeric: true }); });
+  }
+  const clockText = (s) => { s = Math.max(0, Math.round(s)); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), q = s % 60; return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(q).padStart(2, '0'); };
+  const subtitle = (m) => { if (!m) return ''; const p = []; const d = dayOf(m.date); if (d) p.push(isToday(d) ? 'Today' : d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })); if (m.time) p.push(m.time); if (m.location) p.push(m.location); return p.join('  ·  '); };
+  const fmtBytes = (n) => n >= 1e9 ? (n / 1e9).toFixed(1) + ' GB' : n >= 1e6 ? (n / 1e6).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1e3)) + ' KB';
+
+  // ---------- discovery ----------
+  const EXT = { pdf: 'pdf', jpg: 'image', jpeg: 'image', png: 'image', gif: 'image', webp: 'image', heic: 'image', mp4: 'video', mov: 'video', m4v: 'video', mp3: 'audio', m4a: 'audio', wav: 'audio' };
+  const kindOf = (n) => EXT[(n.split('.').pop() || '').toLowerCase()] || null;
+  let colls = [];
+  async function listing(url) { try { const html = await (await fetch(url)).text(); return [...html.matchAll(/href="([^"?]+)"/g)].map(m => decodeURIComponent(m[1])).filter(h => !h.startsWith('..') && !h.startsWith('/') && !h.startsWith('http')); } catch (e) { return []; } }
+  async function makeItem(folder, name, url, file) {
+    const kind = kindOf(name); if (!kind) return null;
+    const it = { id: folder + '/' + name, folder, name, kind, title: name.replace(/\.[^.]+$/, ''), url, measure: 1, size: 0 };
+    if (file) it.size = file.size; else { try { const r = await fetch(url, { method: 'HEAD' }); it.size = +r.headers.get('content-length') || 0; } catch (e) {} }
+    if (kind === 'pdf') { try { it.pdf = await pdfjsLib.getDocument(file ? await file.arrayBuffer() : url).promise; it.measure = it.pdf.numPages; it.tall = await isTall(it.pdf); } catch (e) { return null; } }
+    return it;
+  }
+  async function isTall(pdf) { const p = await pdf.getPage(1), v = p.getViewport({ scale: 1 }); return v.height > v.width; }
+  async function discover() {
+    if (store('sim2.wiped', false)) return;
+    const base = '../../SampleDecks/';
+    const root = await listing(base);
+    const loose = [];
+    for (const n of root.filter(n => !n.endsWith('/'))) { const it = await makeItem('', n, base + encodeURIComponent(n)); if (it) loose.push(it); }
+    if (loose.length) colls.push({ folder: '', title: 'Library', items: loose.sort(byTitle), meeting: null });
+    for (const d of root.filter(n => n.endsWith('/') && !/^(notes|inbox)\/$/i.test(n))) {
+      const folder = d.slice(0, -1), url = base + encodeURIComponent(folder) + '/';
+      let meeting = null; try { const r = await fetch(url + 'meeting.json'); if (r.ok) meeting = await r.json(); } catch (e) {}
+      const items = [];
+      for (const n of (await listing(url)).filter(n => !n.endsWith('/'))) { const it = await makeItem(folder, n, url + encodeURIComponent(n)); if (it) items.push(it); }
+      if (!items.length && !meeting) continue;
+      colls.push({ folder, title: (meeting && meeting.title) || folder, items: items.sort(byTitle), meeting });
+    }
+    sortColls(colls);
+  }
+  const byTitle = (a, b) => a.title.localeCompare(b.title, undefined, { numeric: true });
+  const allItems = () => colls.flatMap(c => c.items);
+  const frac = (it) => { const p = progress[it.id]; if (!p) return null; if (it.kind === 'pdf') return Math.min((p.page + 1) / Math.max(it.measure, 1), 1); if (it.kind === 'video' || it.kind === 'audio') return Math.min(p.page / Math.max(it.measure, 1), 1); return null; };
+
+  // ---------- layout / clock ----------
+  function fit() {
+    const { w, h } = SIZE(); screenEl.style.width = w + 'px'; screenEl.style.height = h + 'px';
+    screenEl.classList.toggle('land', landscape); screenEl.classList.toggle('port', !landscape);
+    frame.style.transform = `translate(-50%, -50%) scale(${Math.min((innerWidth - 20) / (w + 32), (innerHeight - 56) / (h + 32), 1)})`;
+    if (mode === 'reader') drawPage();
+  }
+  addEventListener('resize', fit);
+  $('rot').onclick = () => { landscape = !landscape; fit(); };
+  const tick = () => document.querySelectorAll('.clock').forEach(e => e.textContent = nowDate().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }));
+  setInterval(tick, 15000); tick();
+  const applyBrightness = () => { $('dim').style.opacity = String((1 - brightness) * 0.85); };
+
+  // ---------- views ----------
+  let mode = 'library', cur = null, curColl = null;
+  const show = (v) => { mode = v; ['library', 'reader', 'gallery', 'player'].forEach(id => $(id).classList.toggle('hidden', id !== v)); };
+  const dispBtn = (extra = '') => `<button class="iconbtn disp" aria-label="Display" ${extra}>${ic.sun}</button>`;
+
+  // ---------- library ----------
+  async function cover(it, el) {
+    if (it.kind === 'pdf') { const pg = await it.pdf.getPage(1); const b = pg.getViewport({ scale: 1 }); const vp = pg.getViewport({ scale: 172 / b.height * 2 }); const c = document.createElement('canvas'); c.width = vp.width; c.height = vp.height; c.style.height = '172px'; c.style.width = vp.width / 2 + 'px'; c.style.maxHeight = 'none'; el.appendChild(c); await pg.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise; c.style.height = ''; c.style.width = ''; c.style.maxWidth = 'calc(100% - 28px)'; c.style.maxHeight = ''; c.style.objectFit = 'contain'; }
+    else if (it.kind === 'image') { const i = document.createElement('img'); i.src = it.url; i.loading = 'lazy'; el.appendChild(i); }
+    else if (it.kind === 'video') { const v = document.createElement('video'); v.src = it.url + '#t=1'; v.preload = 'metadata'; v.muted = true; el.appendChild(v); const p = document.createElement('span'); p.className = 'play'; p.innerHTML = ic.play; el.appendChild(p); }
+    else { el.innerHTML = '<span style="font-size:44px;color:#6B6B6B">♫</span>'; }
+  }
+  const statusOf = (it) => {
+    const p = progress[it.id];
+    if (it.kind === 'pdf') { const pages = `${it.measure} ${it.measure === 1 ? 'page' : 'pages'}`; return p && p.page > 0 ? `${pages}  ·  ${Math.round(frac(it) * 100)}%` : pages; }
+    if (it.kind === 'image') return 'Image';
+    const len = clockText(it.measure); if (it.kind === 'audio') return 'Audio  ·  ' + len;
+    return 'Video  ·  ' + len + (p && p.page > 5 ? '  ·  Resume ' + clockText(p.page) : '');
+  };
+  function renderLibrary() {
+    show('library');
+    const n = allItems().length; $('count').textContent = n ? `${n} ${n === 1 ? 'item' : 'items'}` : '';
+    $('empty').classList.toggle('hidden', colls.length > 0);
+    const cont = $('cont'); cont.innerHTML = '';
+    let best = null; for (const it of allItems()) { const p = progress[it.id]; if (it.kind !== 'image' && p && (!best || p.opened > progress[best.id].opened)) best = it; }
+    if (best) {
+      const p = progress[best.id], f = frac(best);
+      const det = best.kind === 'pdf' ? `Page ${p.page + 1} of ${best.measure}  ·  ${Math.round(f * 100)}%` : `${clockText(p.page)} of ${clockText(best.measure)}`;
+      const d = document.createElement('div'); d.className = 'continue';
+      d.innerHTML = `<div class="cv"></div><div style="flex:1"><div class="lbl">CONTINUE</div><h2></h2><div class="det"></div><div class="pb"><i style="width:${(f || 0) * 100}%"></i></div></div><span style="font-size:22px;color:#6B6B6B">${ic.back.replace('M15 5l-7 7 7 7', 'M9 5l7 7-7 7')}</span>`;
+      d.querySelector('h2').textContent = best.title; d.querySelector('.det').textContent = det;
+      d.onclick = () => openItem(best, colls.find(c => c.folder === best.folder));
+      cover(best, d.querySelector('.cv')); cont.appendChild(d);
+    }
+    const root = $('colls'); root.innerHTML = '';
+    const headers = !(colls.length === 1 && !colls[0].folder);
+    for (const c of colls) {
+      const s = document.createElement('section'); s.className = 'coll';
+      if (headers) {
+        const m = c.meeting || {};
+        s.innerHTML = `<div class="sh"><div><h2></h2><div class="sub"></div></div>${m.confidential ? '<span class="tag">CONFIDENTIAL</span>' : ''}<button class="notesbtn">${ic.notes} Notes</button></div>${m.note ? '<p class="note"></p>' : ''}<div class="rule"></div>`;
+        s.querySelector('h2').textContent = c.title; s.querySelector('.sub').textContent = subtitle(m); if (m.note) s.querySelector('.note').textContent = m.note;
+        s.querySelector('.notesbtn').onclick = () => openNotes(c);
+      }
+      const g = document.createElement('div'); g.className = 'grid';
+      for (const it of c.items) {
+        const card = document.createElement('div'); card.className = 'card';
+        const f = frac(it);
+        card.innerHTML = `<div class="cover">${progress[it.id] ? '' : '<span class="new">NEW</span>'}</div>${f != null ? `<div class="pb"><i style="width:${f * 100}%"></i></div>` : ''}<h3></h3><p></p>`;
+        card.querySelector('h3').textContent = it.title; card.querySelector('p').textContent = statusOf(it);
+        card.onclick = () => openItem(it, c); cover(it, card.querySelector('.cover')); g.appendChild(card);
+      }
+      const hasAgenda = c.meeting && c.meeting.agenda && c.meeting.agenda.length;
+      if (hasAgenda && c.items.length) { const sp = document.createElement('div'); sp.className = 'split'; sp.appendChild(agendaEl(c)); sp.appendChild(g); s.appendChild(sp); }
+      else { if (hasAgenda) s.appendChild(agendaEl(c)); if (c.items.length) s.appendChild(g); }
+      root.appendChild(s);
+    }
+  }
+  function agendaEl(c) {
+    const m = c.meeting, ag = m.agenda, box = document.createElement('div'); box.className = 'agenda';
+    const pos = isToday(dayOf(m.date)) ? (() => { const d = nowDate(); return position(ag.map(a => minutes(a.time)), d.getHours() * 60 + d.getMinutes()); })() : { now: null, next: null };
+    ag.forEach((a, i) => {
+      const it = a.file && c.items.find(x => x.name.toLowerCase() === a.file.toLowerCase());
+      const row = document.createElement('div'); row.className = 'arow' + (i === pos.now ? ' now' : '') + (it ? ' go' : '');
+      row.innerHTML = `<div class="tm"></div><div><div class="tt"></div>${a.presenter ? '<div class="pr"></div>' : ''}</div><div class="sp"></div>${i === pos.now ? '<span class="tag fill">NOW</span>' : i === pos.next ? '<span class="tag">NEXT</span>' : ''}${it ? '<span style="color:#6B6B6B">›</span>' : ''}`;
+      row.querySelector('.tm').textContent = a.time || ''; row.querySelector('.tt').textContent = a.title; if (a.presenter) row.querySelector('.pr').textContent = a.presenter;
+      if (it) row.onclick = () => openItem(it, c); box.appendChild(row);
+    });
+    return box;
+  }
+  function openItem(it, c, startPage) {
+    cur = it; curColl = c || colls.find(x => x.folder === it.folder);
+    progress[it.id] = progress[it.id] || { page: 0, opened: Date.now() }; progress[it.id].opened = Date.now();
+    if (startPage != null) progress[it.id].page = startPage;   // a search result opens on its page
+    saveProgress();
+    if (it.kind === 'pdf') openReader(it); else if (it.kind === 'image') openGallery(it); else openPlayer(it);
+  }
+  const closeToLibrary = () => { if (typeof stopMarking === 'function') stopMarking(); saveProgress(); $('vid').pause(); $('vid').removeAttribute('src'); closePop(); renderLibrary(); };
+
+  // ---------- reader ----------
+  let pageIdx = 0, chrome = false, outline = [], dir = '', scrubTimer = null, drawToken = 0;
+  // Landscape iPad plus portrait-shaped pages = a two-page spread (cover alone, then 2-3, 4-5 ...), like Books.
+  const isSpread = () => landscape && cur && cur.kind === 'pdf' && cur.tall;
+  const spreadStart = () => pageIdx === 0 ? 0 : (pageIdx % 2 === 1 ? pageIdx : pageIdx - 1);
+  async function openReader(it) {
+    show('reader'); chrome = false; pageIdx = Math.min(progress[it.id].page || 0, it.measure - 1);
+    outline = await buildOutline(it); applyTone(); drawPage(); renderBars();
+  }
+  const applyTone = () => { const bg = { standard: '#F1F0EE', warm: '#EADFC8', night: '#16161A' }[tone]; $('reader').style.background = bg; $('foot').style.color = tone === 'night' ? '#8E8E93' : tone === 'warm' ? '#7A6F5A' : '#6B6B6B'; $('pageholder').style.filter = tone === 'night' ? 'invert(1)' : tone === 'warm' ? 'sepia(.28) saturate(.9)' : 'none'; applyBrightness(); };
+  async function buildOutline(it) {
+    const out = [], items = await it.pdf.getOutline();
+    async function walk(list, depth) { for (const o of list || []) { let dest = o.dest; if (typeof dest === 'string') dest = await it.pdf.getDestination(dest); if (Array.isArray(dest)) { try { out.push({ label: o.title, depth, page: await it.pdf.getPageIndex(dest[0]) }); } catch (e) {} } await walk(o.items, depth + 1); } }
+    await walk(items, 0); return out;
+  }
+  const flagsOf = () => (progress[cur.id].flags || []).slice().sort((a, b) => a - b);
+  const isFlagged = () => flagsOf().includes(pageIdx);
+  function pageLabel() {
+    const total = cur.measure, pct = Math.round((pageIdx + 1) / total * 100);
+    if (isSpread() && pageIdx > 0) { const l = spreadStart(), r = Math.min(l + 1, total - 1); if (l !== r) return `Pages ${l + 1}-${r + 1} of ${total}  ·  ${pct}%`; }
+    return `Page ${pageIdx + 1} of ${total}  ·  ${pct}%`;
+  }
+  async function drawPage() {
+    if (mode !== 'reader' || !cur) return;
+    const token = ++drawToken;
+    const { w, h } = SIZE(); const area = { w, h: h - 30 }, dpr = window.__dpr || 2, spread = isSpread();
+    let slots = [pageIdx];
+    if (spread) { if (pageIdx === 0) slots = [null, 0]; else { const l = spreadStart(); slots = [l, l + 1 < cur.measure ? l + 1 : null]; } }
+    const firstIdx = slots.find(s => s != null);
+    const first = await cur.pdf.getPage(firstIdx + 1); const base = first.getViewport({ scale: 1 });
+    const fs = Math.min((spread ? area.w / 2 : area.w) / base.width, area.h / base.height);
+    if (token !== drawToken) return;
+    const holder = $('pageholder'); holder.innerHTML = ''; holder.className = dir; dir = '';
+    const todo = [];
+    for (const s of slots) {
+      const pg = document.createElement('div'); pg.className = 'pg';
+      if (s == null) { pg.style.width = base.width * fs + 'px'; pg.style.height = base.height * fs + 'px'; holder.appendChild(pg); continue; }
+      const page = await cur.pdf.getPage(s + 1); const vp = page.getViewport({ scale: fs * dpr });
+      if (token !== drawToken) return;
+      const c = document.createElement('canvas'); c.width = vp.width; c.height = vp.height; c.style.width = vp.width / dpr + 'px'; c.style.height = vp.height / dpr + 'px';
+      pg.appendChild(c); holder.appendChild(pg); todo.push({ page, c, pg, s });
+    }
+    if (spread) { const g = document.createElement('div'); g.className = 'gutter'; holder.appendChild(g); }
+    $('footl').textContent = pageLabel();
+    $('ribbon').classList.toggle('hidden', !isFlagged()); $('ribbon').innerHTML = ic.mark;
+    for (const t of todo) {
+      await t.page.render({ canvasContext: t.c.getContext('2d'), viewport: t.page.getViewport({ scale: fs * dpr }) }).promise;
+      if (token !== drawToken) return;
+      addInk(t);
+      const vp1 = t.page.getViewport({ scale: fs });
+      for (const a of await t.page.getAnnotations()) {
+        if (a.subtype !== 'Link' || !a.dest) continue; let dest = a.dest; if (typeof dest === 'string') dest = await cur.pdf.getDestination(dest); if (!Array.isArray(dest)) continue;
+        let tg; try { tg = await cur.pdf.getPageIndex(dest[0]); } catch (e) { continue; }
+        const [x1, y1, x2, y2] = vp1.convertToViewportRectangle(a.rect), el = document.createElement('div'); el.className = 'link';
+        Object.assign(el.style, { left: Math.min(x1, x2) + 'px', top: Math.min(y1, y2) + 'px', width: Math.abs(x2 - x1) + 'px', height: Math.abs(y2 - y1) + 'px' }); el.dataset.target = tg; t.pg.appendChild(el);
+      }
+    }
+  }
+  function goPage(i, d) {
+    i = Math.max(0, Math.min(cur.measure - 1, i)); if (i === pageIdx) return;
+    dir = d || (i > pageIdx ? 'slide-l' : 'slide-r'); pageIdx = i; progress[cur.id].page = i; saveProgress();
+    if (chrome) { chrome = false; renderBars(); } drawPage();
+  }
+  // Turning a page moves a whole spread at a time when two pages are showing.
+  function turn(d) {
+    if (!isSpread()) return goPage(pageIdx + d);
+    const s = spreadStart(), target = d > 0 ? (s === 0 ? 1 : s + 2) : (s <= 1 ? 0 : s - 2);
+    goPage(target);
+  }
+  function renderBars() {
+    const top = $('rtop'), bot = $('rbot'); top.classList.toggle('hidden', !chrome); bot.classList.toggle('hidden', !chrome || cur.measure < 2);
+    if (!chrome) return;
+    top.innerHTML = `<button class="iconbtn" id="rback" aria-label="Library">${ic.back}</button><span class="sp"></span>${outline.length || flagsOf().length ? `<button class="iconbtn" id="rcont" aria-label="Contents">${ic.list}</button>` : ''}<button class="iconbtn" id="rsearch" aria-label="Search">${ic.search}</button><button class="iconbtn" id="rpen" aria-label="Write on this document">${ic.pen}</button><button class="iconbtn" id="rmark" aria-label="Bookmark">${ic.mark.replace('<svg', isFlagged() ? '<svg style="fill:currentColor"' : '<svg')}</button><button class="iconbtn" id="rnotes" aria-label="Notes">${ic.notes}</button>${dispBtn('id="rdisp"')}<span class="ttl"></span>`;
+    top.querySelector('.ttl').textContent = cur.title;
+    bot.innerHTML = `<div class="prev hidden"><canvas></canvas><span></span></div><div class="sl"><span id="s1" style="min-width:34px;text-align:right">${pageIdx + 1}</span><input id="slider" type="range" min="0" max="${cur.measure - 1}" value="${pageIdx}"><span id="s2" style="min-width:34px">${cur.measure}</span></div>`;
+    $('rback').onclick = closeToLibrary; $('rcont') && ($('rcont').onclick = openContents); $('rsearch').onclick = openSearch; $('rpen').onclick = startMarking; $('rnotes').onclick = () => openNotes(curColl); $('rdisp').onclick = (e) => openPop(e.currentTarget, true);
+    $('rmark').onclick = () => { const f = new Set(flagsOf()); f.has(pageIdx) ? f.delete(pageIdx) : f.add(pageIdx); progress[cur.id].flags = [...f]; saveProgress(); renderBars(); drawPage(); };
+    const sl = $('slider'), prev = bot.querySelector('.prev');
+    const secFor = (i) => { let b = null; for (const e of outline) if (e.page <= i && (!b || e.page >= b.page)) b = e; return b && b.label; };
+    sl.oninput = () => { const i = +sl.value; $('s1').textContent = i + 1; prev.classList.remove('hidden'); prev.querySelector('span').textContent = `Page ${i + 1}` + (secFor(i) ? `  ·  ${secFor(i)}` : ''); clearTimeout(scrubTimer); scrubTimer = setTimeout(async () => { const pg = await cur.pdf.getPage(i + 1), b = pg.getViewport({ scale: 1 }), vp = pg.getViewport({ scale: 340 / b.height }), cv = prev.querySelector('canvas'); cv.width = vp.width; cv.height = vp.height; cv.style.width = vp.width / 2 + 'px'; cv.style.height = '170px'; await pg.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise; }, 70); };
+    sl.onchange = () => { prev.classList.add('hidden'); goPage(+sl.value, 'slide-l'); };
+  }
+  // ---------- Writing with a pen (Apple Pencil in the real app; mouse or pen here) ----------
+  // Strokes are kept per document and page, as fractions of the page so they follow it at any size.
+  let ink = store('sim2.ink', {}), penOn = false, tool = { kind: 'pen', color: '#1a1a1a' }, lastInkPage = null;
+  const saveInk = () => put('sim2.ink', ink);
+  const pageInk = (idx) => ((ink[cur.id] = ink[cur.id] || {})[idx] = ink[cur.id][idx] || []);
+  function paintInk(cv, idx) {
+    const g = cv.getContext('2d'); g.clearRect(0, 0, cv.width, cv.height); g.lineCap = 'round'; g.lineJoin = 'round';
+    for (const st of (ink[cur.id] && ink[cur.id][idx]) || []) {
+      g.globalAlpha = st.a; g.strokeStyle = st.c; g.lineWidth = st.w * cv.width; g.beginPath();
+      st.pts.forEach(([x, y], i) => i ? g.lineTo(x * cv.width, y * cv.height) : g.moveTo(x * cv.width, y * cv.height));
+      if (st.pts.length === 1) g.lineTo(st.pts[0][0] * cv.width + .1, st.pts[0][1] * cv.height); g.stroke();
+    }
+    g.globalAlpha = 1;
+  }
+  function addInk(t) {
+    const cv = document.createElement('canvas'); cv.className = 'ink'; cv.width = t.c.width; cv.height = t.c.height; cv.style.width = t.c.style.width; cv.style.height = t.c.style.height; cv.dataset.page = t.s;
+    t.pg.appendChild(cv); paintInk(cv, t.s);
+    let cur1 = null;
+    const at = (e) => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height]; };
+    cv.addEventListener('pointerdown', (e) => {
+      if (!penOn) return; cv.setPointerCapture(e.pointerId); lastInkPage = t.s; const pt = at(e);
+      if (tool.kind === 'eraser') { eraseAt(cv, t.s, pt); cur1 = 'erase'; return; }
+      cur1 = { c: tool.kind === 'hl' ? '#f2c230' : tool.color, w: tool.kind === 'hl' ? 0.022 : 0.0035, a: tool.kind === 'hl' ? 0.4 : 1, pts: [pt] };
+      pageInk(t.s).push(cur1); paintInk(cv, t.s);
+    });
+    cv.addEventListener('pointermove', (e) => {
+      if (!cur1) return; const pt = at(e);
+      if (cur1 === 'erase') { eraseAt(cv, t.s, pt); return; }
+      cur1.pts.push(pt); paintInk(cv, t.s);
+    });
+    const end = () => { if (cur1) { cur1 = null; saveInk(); } };
+    cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
+  }
+  function eraseAt(cv, idx, pt) {
+    const list = pageInk(idx), keep = list.filter(st => !st.pts.some(([x, y]) => Math.hypot(x - pt[0], (y - pt[1]) * (cv.height / cv.width)) < 0.02));
+    if (keep.length !== list.length) { ink[cur.id][idx] = keep; paintInk(cv, idx); saveInk(); }
+  }
+  function renderPenbar() {
+    const bar = $('penbar'); bar.classList.toggle('hidden', !penOn); if (!penOn) return;
+    const on = (k, c) => tool.kind === k && (!c || tool.color === c) ? ' on' : '';
+    bar.innerHTML = `<button class="dot${on('pen', '#1a1a1a')}" data-k="pen" data-c="#1a1a1a" style="background:#1a1a1a" aria-label="Black pen"></button><button class="dot${on('pen', '#1f5fbf')}" data-k="pen" data-c="#1f5fbf" style="background:#1f5fbf" aria-label="Blue pen"></button><button class="dot${on('pen', '#c0392b')}" data-k="pen" data-c="#c0392b" style="background:#c0392b" aria-label="Red pen"></button><button class="${on('hl').trim()}" data-k="hl">Highlighter</button><button class="${on('eraser').trim()}" data-k="eraser">Eraser</button><button id="pundo">Undo</button><button id="pclear">Clear page</button><button class="done" id="pdone">\u2713 Done writing</button>`;
+    bar.querySelectorAll('[data-k]').forEach(b => b.onclick = () => { tool = { kind: b.dataset.k, color: b.dataset.c || tool.color }; renderPenbar(); });
+    $('pundo').onclick = () => { pageInk(lastInkPage != null ? lastInkPage : pageIdx).pop(); saveInk(); redrawAllInk(); };
+    $('pclear').onclick = () => { pageInk(lastInkPage != null ? lastInkPage : pageIdx); ink[cur.id][lastInkPage != null ? lastInkPage : pageIdx] = []; saveInk(); redrawAllInk(); };
+    $('pdone').onclick = stopMarking;
+  }
+  function redrawAllInk() { document.querySelectorAll('#pageholder .ink').forEach((cv) => paintInk(cv, +cv.dataset.page)); }
+  function startMarking() { penOn = true; chrome = false; renderBars(); $('reader').classList.add('pen'); renderPenbar(); }
+  function stopMarking() { penOn = false; $('reader').classList.remove('pen'); renderPenbar(); saveInk(); }
+
+  // tap zones: outer fifth turns the page, middle toggles the bar, links follow
+  let sx = null;
+  $('reader').addEventListener('pointerdown', (e) => { if (e.target.closest('.topbar,.botbar,#penbar') || (penOn && e.target.classList.contains('ink'))) { sx = null; return; } sx = e.clientX; });
+  $('reader').addEventListener('pointerup', (e) => {
+    if (sx === null || mode !== 'reader') return;
+    const r = $('reader').getBoundingClientRect(), scale = r.width / $('reader').offsetWidth, dx = (e.clientX - sx) / scale; sx = null;
+    if (Math.abs(dx) > 60) { turn(dx < 0 ? 1 : -1); return; }
+    const link = e.target.closest('.link'); if (link) { goPage(+link.dataset.target); return; }
+    const f = (e.clientX - r.left) / r.width;
+    if (f < 0.2) turn(-1); else if (f > 0.8) turn(1); else { chrome = !chrome; renderBars(); }
+  });
+  addEventListener('keydown', (e) => { if (mode === 'reader') { if (e.key === 'ArrowRight') turn(1); if (e.key === 'ArrowLeft') turn(-1); } if (mode === 'gallery') { if (e.key === 'ArrowRight') gal(1); if (e.key === 'ArrowLeft') gal(-1); } });
+
+  // ---------- sheets ----------
+  const sheet = (title, html) => { $('sheettitle').textContent = title; $('sheetbody').innerHTML = html; $('sheet').classList.remove('hidden'); };
+  const closeSheet = () => { saveNotes(); $('sheet').classList.add('hidden'); };
+  $('sheetdone').onclick = closeSheet;
+  function openContents() {
+    const fl = flagsOf(); let html = '';
+    if (fl.length) html += '<div class="sech">Bookmarks</div>' + fl.map(p => `<div class="row" data-p="${p}"><span>Page ${p + 1}</span><span class="pg">${p + 1}</span></div>`).join('');
+    if (outline.length) html += '<div class="sech">Contents</div>' + outline.map(o => `<div class="row" data-p="${o.page}"><span style="padding-left:${o.depth * 20}px;font-weight:${o.depth ? 400 : 500}"></span><span class="pg">${o.page + 1}</span></div>`).join('');
+    sheet(cur.title, html); const rows = $('sheetbody').querySelectorAll('.row');
+    rows.forEach(r => { r.onclick = () => { $('sheet').classList.add('hidden'); goPage(+r.dataset.p); }; });
+    let oi = 0; [...rows].filter(r => r.firstChild.style.paddingLeft !== '').forEach(r => { r.firstChild.textContent = outline[oi++].label; });
+  }
+  function openSearch() {
+    sheet('Search', `<div class="sbar"><span>${ic.search}</span><input id="q" placeholder="Search this document"><span id="qs" style="color:#6B6B6B"></span></div><div id="qr"><div class="empty" style="padding:60px 0;font-size:19px">Type a word or phrase, then press Enter.</div></div>`);
+    const q = $('q'); q.focus();
+    q.onkeydown = async (e) => {
+      if (e.key !== 'Enter' || q.value.trim().length < 2) return; const term = q.value.trim().toLowerCase(), hits = []; $('qs').textContent = 'Searching…';
+      for (let p = 1; p <= cur.measure && hits.length < 300; p++) { const tc = await (await cur.pdf.getPage(p)).getTextContent(), text = tc.items.map(i => i.str).join(' '), low = text.toLowerCase(); let from = 0, at; while ((at = low.indexOf(term, from)) !== -1 && hits.length < 300) { hits.push({ p: p - 1, snip: text.slice(Math.max(0, at - 30), at + term.length + 60) }); from = at + term.length; } }
+      $('qs').textContent = ''; $('qr').innerHTML = hits.length ? hits.map(h => `<div class="row" data-p="${h.p}"><div><div style="font-weight:500">Page ${h.p + 1}</div><div class="snip"></div></div></div>`).join('') : '<div class="empty" style="padding:60px 0;font-size:19px">No matches</div>';
+      [...$('qr').querySelectorAll('.row')].forEach((r, i) => { r.querySelector('.snip').textContent = hits[i].snip; r.onclick = () => { $('sheet').classList.add('hidden'); goPage(+r.dataset.p); }; });
+    };
+  }
+  // Search every document on the iPad: text inside PDFs, names of photos and videos
+  function openSearchAll() {
+    sheet('Search', `<div class="sbar"><span>${ic.search}</span><input id="sq" placeholder="Search every document on this iPad"><span id="sqs" style="color:#6B6B6B"></span></div><div id="sqr"><div class="empty" style="padding:60px 0;font-size:19px">Type a word, a name or a number, then press Enter.</div></div>`);
+    const q = $('sq'); q.focus(); let run = 0;
+    q.onkeydown = async (e) => {
+      if (e.key !== 'Enter' || q.value.trim().length < 2) return; const term = q.value.trim().toLowerCase(), token = ++run; let total = 0, groups = 0;
+      $('sqs').textContent = 'Searching\u2026'; $('sqr').innerHTML = '';
+      for (const c of colls) for (const it of c.items) {
+        if (token !== run || total >= 200) break; const hits = [];
+        if (it.kind === 'pdf') {
+          for (let p = 1; p <= it.measure && hits.length < 25; p++) { const tc = await (await it.pdf.getPage(p)).getTextContent(), text = tc.items.map(i => i.str).join(' '), low = text.toLowerCase(); let from = 0, at; while ((at = low.indexOf(term, from)) !== -1 && hits.length < 25) { hits.push({ p: p - 1, snip: text.slice(Math.max(0, at - 30), at + term.length + 60) }); from = at + term.length; } }
+        } else if (it.title.toLowerCase().includes(term)) hits.push({ p: null, snip: '' });
+        if (!hits.length) continue; total += hits.length; groups++;
+        const g = document.createElement('div'); g.innerHTML = `<div class="sech"></div>` + hits.map(h => `<div class="row"><div><div style="font-weight:500">${h.p == null ? (it.kind === 'image' ? 'Photo' : 'Title matches') : 'Page ' + (h.p + 1)}</div>${h.snip ? '<div class="snip"></div>' : ''}</div></div>`).join('');
+        g.querySelector('.sech').textContent = it.title;
+        g.querySelectorAll('.row').forEach((r, i) => { const sn = r.querySelector('.snip'); if (sn) sn.textContent = hits[i].snip; r.onclick = () => { $('sheet').classList.add('hidden'); openItem(it, c, hits[i].p); }; });
+        $('sqr').appendChild(g);
+      }
+      if (token === run) { $('sqs').textContent = ''; if (!groups) $('sqr').innerHTML = '<div class="empty" style="padding:60px 0;font-size:19px">No matches</div>'; }
+    };
+  }
+  $('openSearch').onclick = openSearchAll;
+  let notesFor = null;
+  function openNotes(c) { notesFor = c; const key = 'sim2.notes.' + (c.folder || 'Library'); sheet('Notes  ·  ' + c.title, `<div class="sbar" style="justify-content:flex-end"><button id="addt" style="border:0;background:none;font:inherit;font-weight:500;cursor:pointer">Add time</button></div><textarea id="nt" placeholder="Type your notes here"></textarea>`); $('nt').value = store(key, ''); $('nt').focus(); $('addt').onclick = () => { const t = $('nt'); t.value += (t.value && !t.value.endsWith('\n') ? '\n' : '') + '[' + new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) + '] '; t.focus(); }; }
+  function saveNotes() { const t = $('nt'); if (t && notesFor) put('sim2.notes.' + (notesFor.folder || 'Library'), t.value); notesFor = null; }
+
+  // ---------- Manage: add files, remove, wipe, PIN ----------
+  const pinKey = 'sim2.pin';
+  let unlocked = false;
+  function confirmBox(title, body, okLabel, onOk, danger = true) {
+    $('ctitle').textContent = title; $('cbody').textContent = body;
+    $('cbtns').innerHTML = (okLabel ? `<button id="cno">Cancel</button><button id="cyes" class="${danger ? 'danger' : ''}">${okLabel}</button>` : '<button id="cyes">OK</button>');
+    $('confirm').classList.remove('hidden');
+    $('cyes').onclick = () => { $('confirm').classList.add('hidden'); if (onOk) onOk(); };
+    if ($('cno')) $('cno').onclick = () => $('confirm').classList.add('hidden');
+  }
+  function openManage() {
+    if (store(pinKey, null) && !unlocked) {
+      sheet('Manage content', `<div class="pinbox"><div style="font-size:34px">🔒</div><div style="font-size:20px;font-weight:500">Enter the PIN to manage content</div><input id="pinin" type="password" inputmode="numeric" maxlength="8"><div id="pinmsg" style="color:#c0392b"></div><button class="primary" id="pinok">Open</button></div>`);
+      const go = () => { if ($('pinin').value === store(pinKey, null)) { unlocked = true; renderManage(); } else { $('pinmsg').textContent = 'That PIN is not right.'; $('pinin').value = ''; } };
+      $('pinok').onclick = go; $('pinin').onkeydown = (e) => { if (e.key === 'Enter') go(); }; $('pinin').focus(); return;
+    }
+    renderManage();
+  }
+  function renderManage() {
+    const t0 = startOfToday().getTime(), finished = colls.filter(c => c.folder && c.meeting && dayOf(c.meeting.date) && dayOf(c.meeting.date).getTime() < t0);
+    const pin = store(pinKey, null);
+    const rows = colls.map((c, i) => `<div class="mrow static"><div class="mgrow"><b>${c.folder ? esc(c.title) : 'Loose files (no meeting)'}</b><small>${c.items.length} ${c.items.length === 1 ? 'item' : 'items'}  ·  ${fmtBytes(c.items.reduce((a, x) => a + (x.size || 0), 0))}</small></div><button class="red" data-rm="${i}">Remove</button></div>`).join('') || '<div class="mrow static"><small>Nothing yet.</small></div>';
+    sheet('Manage content', `
+      <div class="sech">Add to this iPad</div>
+      <div class="mrow" id="mfiles"><span class="mi">${ic.file}</span><div class="mgrow"><b>Choose files</b><small>PDFs, photos, videos or audio</small></div><span class="chev">›</span></div>
+      <div class="mrow" id="mfolder"><span class="mi">${ic.folder}</span><div class="mgrow"><b>Choose a folder</b><small>A prepared meeting folder, with its agenda</small></div><span class="chev">›</span></div>
+      <p class="mfoot">Plug in a USB drive or SD card reader first, then pick it from the list. Files are copied onto this iPad. Nothing is sent anywhere. (In this mockup the picker is your computer's.)</p>
+      <div class="sech">On this iPad</div>${rows}
+      <div class="sech">Between meetings</div>
+      ${finished.length ? `<div class="mrow" id="mfin"><span class="mi">📅</span><div class="mgrow"><b>Remove ${finished.length} finished ${finished.length === 1 ? 'meeting' : 'meetings'}</b></div></div>` : ''}
+      <div class="mrow" id="mwipe" ${colls.length ? '' : 'style="opacity:.4;pointer-events:none"'}><span class="mi red">🗑</span><div class="mgrow"><b class="red">Clear everything for the next meeting</b><small>Removes every document, photo, video and note from this iPad</small></div></div>
+      <div class="sech">Protect this screen</div>
+      ${pin ? '<div class="mrow" id="mpin"><div class="mgrow"><b>Change PIN</b></div></div><div class="mrow" id="mpinoff"><div class="mgrow"><b class="red">Turn PIN off</b></div></div>' : '<div class="mrow" id="mpin"><div class="mgrow"><b>Set a PIN</b><small>So only the person preparing the iPads can add or remove content</small></div></div>'}
+      <div class="sech">Storage</div><div class="mrow static"><div class="mgrow">Free space</div><small>29.4 GB (example)</small></div>`);
+    $('mfiles').onclick = () => $('fin').click(); $('mfolder').onclick = () => $('din').click();
+    $('sheetbody').querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { const c = colls[+b.dataset.rm]; confirmBox('Are you sure?', `Remove ${c.folder ? '"' + c.title + '"' : 'the loose files'} and its notes from this iPad? This cannot be undone.`, 'Remove', () => { removeColl(c); renderManage(); }); });
+    if ($('mfin')) $('mfin').onclick = () => confirmBox('Are you sure?', 'Remove every meeting dated before today, and its notes? This cannot be undone.', 'Remove finished meetings', () => { finished.forEach(removeColl); renderManage(); });
+    $('mwipe').onclick = () => confirmBox('Are you sure?', 'Remove every document, photo, video and note from this iPad? It will be empty and ready for the next meeting. This cannot be undone.', 'Remove everything', () => { wipeAll(); renderManage(); confirmBox('Done', 'This iPad is empty and ready for the next meeting.', null); });
+    $('mpin').onclick = setPinForm; if ($('mpinoff')) $('mpinoff').onclick = () => confirmBox('Are you sure?', 'Turn the PIN off? Anyone using this iPad will be able to add or remove content.', 'Turn PIN off', () => { put(pinKey, null); renderManage(); });
+  }
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  function removeColl(c) { c.items.forEach(i => { delete progress[i.id]; delete ink[i.id]; }); saveInk(); saveProgress(); clearNotes(c.folder || 'Library'); colls = colls.filter(x => x !== c); renderLibrary(); }
+  function wipeAll() { colls = []; progress = {}; ink = {}; saveInk(); saveProgress(); clearNotes(); put('sim2.wiped', true); renderLibrary(); }
+  function setPinForm() {
+    sheet('Set a PIN', `<div class="form"><input type="password" id="p1" inputmode="numeric" maxlength="8" placeholder="New PIN (4 to 8 digits)"><input type="password" id="p2" inputmode="numeric" maxlength="8" placeholder="Type it again"><small style="color:#6B6B6B">Write it down and keep it somewhere safe. If it is forgotten, the iPad has to be erased and set up again from the Mac.</small><button class="primary" id="psave" disabled>Save</button></div>`);
+    const chk = () => { $('psave').disabled = !(/^\d{4,8}$/.test($('p1').value) && $('p1').value === $('p2').value); };
+    $('p1').oninput = chk; $('p2').oninput = chk; $('psave').onclick = () => { put(pinKey, $('p1').value); unlocked = true; renderManage(); };
+  }
+  // Step 2 after choosing files: which meeting do they belong to?
+  let pendingFiles = [];
+  function destinationForm(files) {
+    pendingFiles = files; const meetings = colls.filter(c => c.folder);
+    sheet('Add files', `<div class="form"><b style="font-weight:500">Where should these ${files.length} ${files.length === 1 ? 'file' : 'files'} go?</b>
+      <div class="seg3"><button data-c="new" class="on">New meeting</button><button data-c="existing">A meeting already here</button><button data-c="lib">No meeting</button></div>
+      <div id="dnew" class="form" style="padding:0"><input type="text" id="dname" placeholder="Meeting name, for example Board Meeting"><label class="chk"><input type="checkbox" id="dhas"> It has a date</label><input type="date" id="ddate" class="hidden"><label class="chk"><input type="checkbox" id="dconf"> Mark as confidential</label></div>
+      <div id="dex" class="hidden">${meetings.length ? '<select id="dsel">' + meetings.map(m => `<option>${esc(m.folder)}</option>`).join('') + '</select>' : '<small style="color:#6B6B6B">There are no meetings on this iPad yet.</small>'}</div>
+      <div id="dlib" class="hidden"><small style="color:#6B6B6B">The files will be listed under Library, not tied to a meeting.</small></div>
+      <button class="primary" id="dgo" disabled>Add ${files.length} ${files.length === 1 ? 'file' : 'files'}</button></div>`);
+    let choice = 'new'; const ok = () => { $('dgo').disabled = choice === 'new' ? !$('dname').value.trim() : choice === 'existing' ? !$('dsel') : false; };
+    $('sheetbody').querySelectorAll('.seg3 button').forEach(b => b.onclick = () => { choice = b.dataset.c; $('sheetbody').querySelectorAll('.seg3 button').forEach(x => x.classList.toggle('on', x === b)); $('dnew').classList.toggle('hidden', choice !== 'new'); $('dex').classList.toggle('hidden', choice !== 'existing'); $('dlib').classList.toggle('hidden', choice !== 'lib'); ok(); });
+    $('dname').oninput = ok; $('dhas').onchange = () => { $('ddate').classList.toggle('hidden', !$('dhas').checked); };
+    $('dgo').onclick = async () => {
+      let folder = '', meeting = null;
+      if (choice === 'new') { folder = $('dname').value.trim().replace(/[\/\\:?*"<>|]/g, '-').slice(0, 80); meeting = { title: $('dname').value.trim() }; if ($('dhas').checked && $('ddate').value) meeting.date = $('ddate').value; if ($('dconf').checked) meeting.confidential = true; }
+      else if (choice === 'existing') folder = $('dsel').value;
+      closeSheetQuiet(); await importFiles(pendingFiles.map(f => ({ file: f, folder })), meeting, folder);
+    };
+  }
+  const closeSheetQuiet = () => $('sheet').classList.add('hidden');
+  async function importFiles(jobs, meetingForNew, folderForNew) {
+    $('work').classList.remove('hidden'); let added = 0; const skipped = [];
+    let coll = colls.find(c => c.folder === folderForNew);
+    if (!coll) { coll = { folder: folderForNew, title: (meetingForNew && meetingForNew.title) || folderForNew || 'Library', items: [], meeting: meetingForNew || null }; colls.push(coll); }
+    for (let i = 0; i < jobs.length; i++) {
+      $('wprog').max = jobs.length; $('wprog').value = i; $('wtext').textContent = `Adding files  ·  ${i + 1} of ${jobs.length}\nPlease keep this screen open.`;
+      const { file, folder } = jobs[i]; const target = jobs[i].coll || coll;
+      if (!kindOf(file.name)) { skipped.push(file.name); continue; }
+      let name = file.name; while (target.items.some(x => x.name === name)) name = name.replace(/(\.[^.]+)?$/, ' 2$1');
+      const it = await makeItem(target.folder, name, URL.createObjectURL(file), file); if (!it) { skipped.push(file.name); continue; }
+      target.items.push(it); target.items.sort(byTitle); added++;
+    }
+    sortColls(colls); $('work').classList.add('hidden'); renderLibrary();
+    put('sim2.wiped', false);
+    let msg = (added === 1 ? '1 file was added.' : added + ' files were added.'); if (skipped.length) msg += '\n\nNot added, because this app cannot open them: ' + skipped.join(', ') + '. Save PowerPoint or Word files as PDF first.';
+    confirmBox(added ? 'Added' : 'Nothing was added', msg, null);
+  }
+  // A whole prepared folder: one meeting (with its agenda), or a folder of meetings
+  async function importFolder(files) {
+    const byMeeting = new Map(); let hasOwn = false;
+    const parts = (f) => (f.webkitRelativePath || f.name).split('/');
+    for (const f of files) { const p = parts(f); if (p.length === 2 && (kindOf(f.name) || f.name.toLowerCase() === 'meeting.json')) hasOwn = true; }
+    for (const f of files) { const p = parts(f); let mf; if (hasOwn) mf = p[0]; else if (p.length >= 3) mf = p[1]; else continue; if (!byMeeting.has(mf)) byMeeting.set(mf, []); byMeeting.get(mf).push(f); }
+    $('work').classList.remove('hidden'); let added = 0; const skipped = []; let n = 0; const total = files.length;
+    for (const [folder, list] of byMeeting) {
+      let coll = colls.find(c => c.folder === folder); let meeting = null;
+      const mj = list.find(f => f.name.toLowerCase() === 'meeting.json'); if (mj) { try { meeting = JSON.parse(await mj.text()); } catch (e) {} }
+      if (!coll) { coll = { folder, title: (meeting && meeting.title) || folder, items: [], meeting }; colls.push(coll); } else if (meeting) { coll.meeting = meeting; coll.title = meeting.title || coll.title; }
+      for (const f of list) {
+        $('wprog').max = total; $('wprog').value = n++; $('wtext').textContent = `Adding folder  ·  ${n} of ${total}\nPlease keep this screen open.`;
+        if (f.name.toLowerCase() === 'meeting.json') continue; if (!kindOf(f.name)) { skipped.push(f.name); continue; }
+        coll.items = coll.items.filter(x => x.name !== f.name);       // same name = an updated version replaces it
+        const it = await makeItem(folder, f.name, URL.createObjectURL(f), f); if (!it) { skipped.push(f.name); continue; } coll.items.push(it); added++;
+      }
+      coll.items.sort(byTitle);
+    }
+    sortColls(colls); $('work').classList.add('hidden'); renderLibrary(); put('sim2.wiped', false);
+    let msg = (added === 1 ? '1 file was added.' : added + ' files were added.'); if (skipped.length) msg += '\n\nNot added, because this app cannot open them: ' + skipped.join(', ') + '. Save PowerPoint or Word files as PDF first.';
+    confirmBox(added ? 'Added' : 'Nothing was added', msg, null);
+  }
+  $('fin').onchange = (e) => { const files = [...e.target.files]; e.target.value = ''; if (files.length) destinationForm(files); };
+  $('din').onchange = (e) => { const files = [...e.target.files]; e.target.value = ''; closeSheetQuiet(); if (files.length) importFolder(files); };
+  $('openManage').onclick = () => { unlocked = false; openManage(); };
+  $('emptyAdd').onclick = () => { unlocked = false; openManage(); };
+
+  // ---------- display popover ----------
+  function closePop() { $('pop').classList.add('hidden'); }
+  function openPop(btn, showTone) {
+    const pop = $('pop'), sr = screenEl.getBoundingClientRect(), br = btn.getBoundingClientRect(), s = sr.width / screenEl.offsetWidth;
+    pop.classList.remove('hidden'); pop.style.top = ((br.bottom - sr.top) / s + 8) + 'px'; pop.style.left = Math.max(10, Math.min(((br.right - sr.left) / s) - 340, SIZE().w - 360)) + 'px';
+    pop.innerHTML = `<div class="r">☀︎<input id="br" type="range" min="5" max="100" value="${Math.round(brightness * 100)}">☀</div>${showTone ? `<div class="seg">${['standard', 'warm', 'night'].map(t => `<button data-t="${t}" class="${t === tone ? 'on' : ''}">${{ standard: 'White', warm: 'Warm', night: 'Night' }[t]}</button>`).join('')}</div>` : ''}`;
+    $('br').oninput = (e) => { brightness = e.target.value / 100; put('sim2.brightness', brightness); applyBrightness(); };
+    pop.querySelectorAll('.seg button').forEach(b => b.onclick = () => { tone = b.dataset.t; put('sim2.tone', tone); applyTone(); pop.querySelectorAll('.seg button').forEach(x => x.classList.toggle('on', x === b)); });
+  }
+  document.addEventListener('pointerdown', (e) => { if (!e.target.closest('#pop') && !e.target.closest('.disp')) closePop(); }, true);
+  document.querySelectorAll('#library .disp').forEach(b => b.onclick = (e) => openPop(e.currentTarget, false));
+
+  // ---------- gallery ----------
+  let gi = 0, gimgs = [], gchrome = false, zoomed = false;
+  function openGallery(it) { gimgs = curColl.items.filter(x => x.kind === 'image'); gi = Math.max(0, gimgs.findIndex(x => x.id === it.id)); gchrome = false; show('gallery'); drawGallery(); }
+  function drawGallery() {
+    const it = gimgs[gi]; zoomed = false; $('gstage').innerHTML = ''; const img = document.createElement('img'); img.src = it.url; img.draggable = false; $('gstage').appendChild(img);
+    img.ondblclick = () => { zoomed = !zoomed; img.style.transform = zoomed ? 'scale(2.5)' : 'none'; };
+    $('gtop').classList.toggle('hidden', !gchrome); $('gfoot').classList.toggle('hidden', gchrome);
+    $('gfoot').innerHTML = `<span>${gi + 1} of ${gimgs.length}</span><span class="clock"></span>`; tick();
+    $('gtop').innerHTML = `<button class="iconbtn" id="gback" aria-label="Library" style="color:#fff">${ic.back}</button><span class="sp" style="flex:1"></span><button class="iconbtn" id="gnotes" style="color:#fff">${ic.notes}</button>${dispBtn('style="color:#fff" id="gdisp"')}<span class="ttl"></span>`;
+    $('gtop').querySelector('.ttl').textContent = it.title; $('gback').onclick = closeToLibrary; $('gnotes').onclick = () => openNotes(curColl); $('gdisp').onclick = (e) => openPop(e.currentTarget, false);
+    progress[it.id] = progress[it.id] || { page: 0, opened: Date.now() }; saveProgress();
+  }
+  const gal = (d) => { const n = gi + d; if (n >= 0 && n < gimgs.length) { gi = n; drawGallery(); } };
+  let gx = null; $('gallery').addEventListener('pointerdown', (e) => { gx = e.target.closest('.darkbar') ? null : e.clientX; });
+  $('gallery').addEventListener('pointerup', (e) => { if (gx === null) return; const dx = (e.clientX - gx) / (screenEl.getBoundingClientRect().width / screenEl.offsetWidth); gx = null; if (zoomed) return; if (Math.abs(dx) > 60) gal(dx < 0 ? 1 : -1); else if (Math.abs(dx) < 6) { gchrome = !gchrome; $('gtop').classList.toggle('hidden', !gchrome); $('gfoot').classList.toggle('hidden', gchrome); } });
+
+  // ---------- player ----------
+  function openPlayer(it) {
+    show('player'); const v = $('vid'); v.src = it.url; const p = progress[it.id]; v.onloadedmetadata = () => { it.measure = Math.round(v.duration) || it.measure; if (p.page > 3 && p.page < it.measure - 5) v.currentTime = p.page; v.play().catch(() => {}); };
+    v.ontimeupdate = () => { progress[it.id].page = Math.floor(v.currentTime); saveProgress(); };
+    $('ptop').innerHTML = `<button class="iconbtn" id="pback" style="color:#fff">${ic.back}</button><span style="flex:1"></span><span class="clock" style="font-size:14px;color:rgba(255,255,255,.7);margin-right:8px"></span><button class="iconbtn" id="pnotes" style="color:#fff">${ic.notes}</button>${dispBtn('style="color:#fff" id="pdisp"')}`;
+    tick(); $('pback').onclick = closeToLibrary; $('pnotes').onclick = () => openNotes(curColl); $('pdisp').onclick = (e) => openPop(e.currentTarget, false);
+  }
+
+  // ---------- drop files in (quick way to add, like the picker with "No meeting") ----------
+  addEventListener('dragover', (e) => e.preventDefault());
+  addEventListener('drop', async (e) => { e.preventDefault(); const files = [...e.dataTransfer.files]; if (files.length) { unlocked = unlocked || !store(pinKey, null); if (unlocked) await importFiles(files.map(f => ({ file: f, folder: '' })), null, ''); } });
+
+  // ---------- demo scenes: ?demo=<name> puts the mockup in a known state (used to film the demo video) ----------
+  async function runDemo(name) {
+    document.body.classList.add('demo'); $('toolbar').style.display = 'none';
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+    const item = (part) => allItems().find(i => i.title.includes(part));
+    const seed = (part, page, ago) => { const it = item(part); progress[it.id] = { page, opened: Date.now() - ago }; };
+    // Wait until the page canvases really contain ink, not just until they exist.
+    const painted = async () => { for (let i = 0; i < 80; i++) { const cs = [...document.querySelectorAll('#pageholder canvas:not(.ink)')]; if (cs.length && cs.every(c => { try { const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; for (let k = 0; k < d.length; k += 400) if (d[k + 3] === 255 && d[k] < 200) return true; return false; } catch (e) { return false; } })) return true; await sleep(500); } return false; };
+    let paintedOk = null;
+    // The headless browser used for filming composites a transparent canvas over a page as solid white, which
+    // hides the page. So for filming, empty writing layers are removed and the others become pictures of themselves.
+    const freeze = async () => { for (const c of [...document.querySelectorAll('#pageholder canvas')]) {
+      const isInk = c.classList.contains('ink');
+      if (isInk && !(((ink[cur.id] || {})[+c.dataset.page] || []).length)) { c.remove(); continue; }
+      const im = new Image(); im.src = c.toDataURL('image/png'); im.className = c.className; im.style.cssText = c.style.cssText + ';display:block;' + (isInk ? '' : 'background:#fff'); await im.decode(); c.replaceWith(im); } };
+    const open = async (part, page, doFreeze = true) => { openItem(item(part), null, page); await sleep(1500); paintedOk = item(part).kind === 'pdf' ? await painted() : null; if (paintedOk && doFreeze) await freeze(); await sleep(1200); };
+    const slider = async (i) => { chrome = true; renderBars(); const sl = $('slider'); sl.value = i; sl.dispatchEvent(new Event('input')); await sleep(2000); };
+    { const t = new Date(); t.setHours(11, 20, 0, 0); window.__fakeNow = t.getTime(); tick(); }   // 11:20 AM: mid-meeting
+    landscape = !name.startsWith('port'); fit();
+    progress = {}; seed('Annual Report', 85, 7200e3); seed('Q4 Board Book', 13, 3600e3); renderLibrary();
+    await sleep(1500);
+    if (name === 'lib-land') { $('library').scrollTop = 0; }   // top of the library, so the Altar'd State wordmark shows
+    else if (name === 'port-lib') { $('library').scrollTop = 0; }
+    else if (name === 'spread') { await open('Q4 Board Book', 7); }
+    else if (name === 'cover') { await open('Q4 Board Book', 0); }
+    else if (name === 'spread-bar') { await open('Q4 Board Book', 7); await slider(19); }
+    else if (name === 'port-read') { await open('Q4 Board Book', 7); }
+    else if (name === 'slides') { await open('Store Performance', 3); }
+    else if (name === 'long-scrub') { await open('Annual Report', 150); await slider(212); }
+    else if (name === 'contents') { await open('Q4 Board Book', 7); openContents(); await sleep(800); }
+    else if (name === 'night') { tone = 'night'; await open('Q4 Board Book', 7); applyTone(); await sleep(800); }
+    else if (name === 'search') { openSearchAll(); const q = $('sq'); q.value = 'revenue'; q.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' })); await sleep(9000); }
+    else if (name === 'photos') { await open('Flagship Floor Plan', 0); await sleep(1500); }
+    else if (name === 'manage') { unlocked = true; openManage(); await sleep(1200); }
+    else if (name === 'destination') { destinationForm([{ name: 'Q4 Plan.pdf' }, { name: 'Store Photo.jpg' }, { name: 'Notes.pptx' }]); const n = $('dname'); n.value = 'Board Meeting'; n.dispatchEvent(new Event('input')); $('dconf').checked = true; await sleep(1200); }
+    else if (name === 'pen') {
+      await open('Store Performance', 5, false); startMarking(); await sleep(1200);
+      const ik = document.querySelector('#pageholder .ink'), rr = ik.getBoundingClientRect();
+      const stroke = (pts) => { const mk = (t, q) => new PointerEvent(t, { bubbles: true, pointerId: 1, clientX: rr.left + rr.width * q[0], clientY: rr.top + rr.height * q[1] }); ik.dispatchEvent(mk('pointerdown', pts[0])); pts.slice(1).forEach(q => ik.dispatchEvent(mk('pointermove', q))); ik.dispatchEvent(mk('pointerup', pts[pts.length - 1])); };
+      const curve = (cx, cy, rx, ry, n = 28) => Array.from({ length: n + 1 }, (_, k) => [cx + rx * Math.cos(k / n * 6.28), cy + ry * Math.sin(k / n * 6.28)]);
+      document.querySelector('#penbar [data-k="hl"]').click(); stroke([[.07, .18], [.5, .18]]);
+      document.querySelector('#penbar [data-c="#c0392b"]').click(); stroke(curve(.76, .46, .14, .12));
+      document.querySelector('#penbar [data-c="#1f5fbf"]').click(); stroke([[.62, .74], [.7, .72], [.78, .76], [.86, .72]]);
+      await sleep(800); await freeze(); await sleep(800);
+    }
+    else if (name === 'video') { await open('Store Walkthrough', 0); const v = $('vid'); v.pause(); v.removeAttribute('src'); v.poster = '../../Demo/frames/video-poster.jpg'; v.load(); await sleep(2500); }   // headless Edge cannot decode the clip, so film a still from it
+    document.title = 'READY ' + name + (paintedOk === null ? '' : paintedOk ? ' painted' : ' UNPAINTED');
+  }
+  fit(); applyBrightness(); await discover(); renderLibrary();
+  { const demoName = new URLSearchParams(location.search).get('demo'); if (demoName) runDemo(demoName); }
+  window.__sim = { draw: () => drawPage(), cur: () => cur, colls: () => colls.map(c => ({ folder: c.folder, title: c.title, items: c.items.map(i => i.title), agenda: !!(c.meeting && c.meeting.agenda) })), open: (name) => { const it = allItems().find(i => i.title.includes(name)); openItem(it, colls.find(c => c.folder === it.folder)); return it && it.title; }, go: (i) => goPage(i), turn, get page() { return pageIdx; }, get mode() { return mode; }, get spread() { return isSpread(); }, minutes, position, rotate: () => $('rot').click(), manage: () => { unlocked = false; openManage(); }, wipe: wipeAll, searchAll: openSearchAll, startMarking, stopMarking, ink: () => ink, pen: () => penOn };
+})();
+</script>
+</body>
+</html>

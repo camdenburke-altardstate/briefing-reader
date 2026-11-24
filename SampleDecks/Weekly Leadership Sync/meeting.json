@@ -1,0 +1,41 @@
+{
+  "title": "Weekly Leadership Sync (sample)",
+  "date": "2026-11-23",
+  "time": "8:30 AM",
+  "location": "Room 4",
+  "agenda": [
+    {
+      "time": "8:30 AM",
+      "title": "Priorities for the week",
+      "presenter": "CEO"
+    },
+    {
+      "time": "9:30 AM",
+      "title": "Holiday plan check",
+      "presenter": "Merchandising",
+      "file": "Sample - Holiday Plan 2026.pdf"
+    },
+    {
+      "time": "11:00 AM",
+      "title": "Sales heat map",
+      "presenter": "Analytics",
+      "file": "Sample - Sales Heat Map.png"
+    },
+    {
+      "time": "1:00 PM",
+      "title": "One page brief",
+      "presenter": "Strategy",
+      "file": "Sample - One Page Brief.pdf"
+    },
+    {
+      "time": "3:00 PM",
+      "title": "Open items",
+      "presenter": "All"
+    },
+    {
+      "time": "4:30 PM",
+      "title": "Wrap up",
+      "presenter": "CEO"
+    }
+  ]
+}

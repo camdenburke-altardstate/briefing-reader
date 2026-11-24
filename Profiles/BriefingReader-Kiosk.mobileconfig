@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>PayloadType</key>
+    <string>Configuration</string>
+    <key>PayloadVersion</key>
+    <integer>1</integer>
+    <key>PayloadIdentifier</key>
+    <string>com.altardstate.briefingreader.kiosk</string>
+    <key>PayloadUUID</key>
+    <string>4C0E7B52-9A31-4D6E-8F27-1B5D3A9C6E01</string>
+    <key>PayloadDisplayName</key>
+    <string>Briefing Reader Kiosk</string>
+    <key>PayloadDescription</key>
+    <string>Locks the iPad to the Briefing Reader app and removes ways out. Supervised devices only.</string>
+    <key>PayloadOrganization</key>
+    <string>Altar'd State</string>
+    <key>PayloadRemovalDisallowed</key>
+    <true/>
+    <key>PayloadContent</key>
+    <array>
+
+        <!-- Autonomous Single App Mode: lets the app lock the iPad to itself. -->
+        <dict>
+            <key>PayloadType</key>
+            <string>com.apple.asam</string>
+            <key>PayloadVersion</key>
+            <integer>1</integer>
+            <key>PayloadIdentifier</key>
+            <string>com.altardstate.briefingreader.kiosk.asam</string>
+            <key>PayloadUUID</key>
+            <string>4C0E7B52-9A31-4D6E-8F27-1B5D3A9C6E02</string>
+            <key>PayloadDisplayName</key>
+            <string>Single App Mode</string>
+            <key>AllowedApplications</key>
+            <array>
+                <dict>
+                    <!-- Must match PRODUCT_BUNDLE_IDENTIFIER in project.yml -->
+                    <key>BundleIdentifier</key>
+                    <string>com.altardstate.briefingreader</string>
+                </dict>
+            </array>
+        </dict>
+
+        <!-- Restrictions. Most of these only apply to supervised devices. -->
+        <dict>
+            <key>PayloadType</key>
+            <string>com.apple.applicationaccess</string>
+            <key>PayloadVersion</key>
+            <integer>1</integer>
+            <key>PayloadIdentifier</key>
+            <string>com.altardstate.briefingreader.kiosk.restrictions</string>
+            <key>PayloadUUID</key>
+            <string>4C0E7B52-9A31-4D6E-8F27-1B5D3A9C6E03</string>
+            <key>PayloadDisplayName</key>
+            <string>Restrictions</string>
+            <!-- Nobody can install or delete apps, or erase the iPad from the Settings app. -->
+            <key>allowAppInstallation</key>
+            <false/>
+            <key>allowAppRemoval</key>
+            <false/>
+            <key>allowEraseContentAndSettings</key>
+            <false/>
+            <!-- Board materials stay on the device. -->
+            <key>allowAirDrop</key>
+            <false/>
+            <key>allowScreenShot</key>
+            <false/>
+            <key>allowCloudDocumentSync</key>
+            <false/>
+            <key>allowCamera</key>
+            <false/>
+            <key>allowAssistant</key>
+            <false/>
+            <!-- Profile cannot be removed or replaced from the device. -->
+            <key>allowUIConfigurationProfileInstallation</key>
+            <false/>
+            <!-- Hold back OS updates (days, max 90) so an update never lands mid-meeting. -->
+            <key>enforcedSoftwareUpdateDelay</key>
+            <integer>90</integer>
+        </dict>
+
+    </array>
+</dict>
+</plist>

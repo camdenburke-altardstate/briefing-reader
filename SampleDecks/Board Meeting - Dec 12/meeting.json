@@ -1,0 +1,44 @@
+{
+  "title": "Board Meeting (sample)",
+  "date": "2026-12-12",
+  "time": "9:00 AM",
+  "location": "Boardroom",
+  "confidential": true,
+  "note": "Sample meeting. Read the Q4 Board Book beforehand.",
+  "agenda": [
+    {
+      "time": "9:00 AM",
+      "title": "Welcome and approvals",
+      "presenter": "Chair"
+    },
+    {
+      "time": "9:15 AM",
+      "title": "Q4 results",
+      "presenter": "Finance",
+      "file": "Sample - Q4 Board Book.pdf"
+    },
+    {
+      "time": "10:00 AM",
+      "title": "Store performance",
+      "presenter": "Operations",
+      "file": "Sample - Store Performance Review.pdf"
+    },
+    {
+      "time": "10:45 AM",
+      "title": "Flagship layout",
+      "presenter": "Real Estate",
+      "file": "Sample - Flagship Floor Plan.jpg"
+    },
+    {
+      "time": "11:15 AM",
+      "title": "Store walkthrough film",
+      "presenter": "Marketing",
+      "file": "Sample - Store Walkthrough.mp4"
+    },
+    {
+      "time": "11:45 AM",
+      "title": "Decisions and close",
+      "presenter": "Chair"
+    }
+  ]
+}

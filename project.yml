@@ -1,0 +1,59 @@
+name: BriefingReader
+options:
+  bundleIdPrefix: com.altardstate
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    TARGETED_DEVICE_FAMILY: "2"
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+    # Set your paid Apple Developer team id here, or pick it in Xcode > Signing.
+    # DEVELOPMENT_TEAM: ABCDE12345
+targets:
+  BriefingReader:
+    type: application
+    platform: iOS
+    sources:
+      - BriefingReader
+    scheme:
+      testTargets:
+        - BriefingReaderTests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.altardstate.briefingreader
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    info:
+      path: BriefingReader/Info.plist
+      properties:
+        CFBundleDisplayName: Briefings
+        UILaunchScreen:
+          UIImageName: Wordmark
+          UIColorName: LaunchBackground
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UIRequiresFullScreen: true
+        UIStatusBarHidden: true
+        # Makes the app's Documents folder visible in Finder > device > Files,
+        # which is how the PDF decks get loaded and updated.
+        UIFileSharingEnabled: true
+        LSSupportsOpeningDocumentsInPlace: true
+        ITSAppUsesNonExemptEncryption: false
+  BriefingReaderTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - BriefingReaderTests
+    dependencies:
+      - target: BriefingReader
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.altardstate.briefingreader.tests

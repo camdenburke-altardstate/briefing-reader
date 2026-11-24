@@ -1,0 +1,123 @@
+name: Build and test the iPad app
+
+# Compiles the Swift app and runs its unit tests on a Mac in the cloud, with no signing and no iPad needed.
+# It answers one question: does the code compile, and do the logic tests pass. It does NOT make an
+# installable app (that needs your Apple Developer signing) and it does not test the kiosk lock.
+# See docs/CLOUD-BUILD.md.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:      # the "Run workflow" button on GitHub's Actions page
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Compile and unit test (macOS, iPad simulator)
+    runs-on: macos-14
+    timeout-minutes: 45
+    steps:
+      - name: Get the code
+        uses: actions/checkout@v4
+
+      - name: Show the toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+          xcrun simctl list runtimes
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate the Xcode project from project.yml
+        run: xcodegen generate
+
+      - name: Pick an iPad simulator
+        id: sim
+        run: |
+          xcrun simctl list devices available | grep -E "iPad" | head -8
+          ID=$(xcrun simctl list devices available | grep -E "iPad" | head -1 | sed -E 's/.*\(([0-9A-Fa-f-]{36})\).*/\1/')
+          echo "Using simulator: $ID"
+          echo "id=$ID" >> "$GITHUB_OUTPUT"
+
+      - name: Build the app and the tests
+        run: |
+          set -o pipefail
+          xcodebuild build-for-testing \
+            -project BriefingReader.xcodeproj \
+            -scheme BriefingReader \
+            -configuration Debug \
+            -destination "id=${{ steps.sim.outputs.id }}" \
+            CODE_SIGNING_ALLOWED=NO \
+            2>&1 | tee build.log
+
+      - name: Run the unit tests
+        run: |
+          set -o pipefail
+          xcodebuild test-without-building \
+            -project BriefingReader.xcodeproj \
+            -scheme BriefingReader \
+            -configuration Debug \
+            -destination "id=${{ steps.sim.outputs.id }}" \
+            -resultBundlePath TestResults.xcresult \
+            CODE_SIGNING_ALLOWED=NO \
+            2>&1 | tee test.log
+
+      - name: Write a short summary
+        if: always()
+        run: |
+          {
+            echo "## Compiler errors"
+            echo '```'
+            (grep -E "error:" build.log 2>/dev/null | sed -E 's#^.*/BriefingReader#BriefingReader#' | sort -u | head -60) || true
+            echo '```'
+            echo "## Compiler warnings (first 30)"
+            echo '```'
+            (grep -E "warning:" build.log 2>/dev/null | sed -E 's#^.*/BriefingReader#BriefingReader#' | sort -u | head -30) || true
+            echo '```'
+            echo "## Test results"
+            echo '```'
+            (grep -E "Test Case .* (passed|failed)|Executed [0-9]+ tests" test.log 2>/dev/null | tail -60) || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Keep the full logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-and-test-logs
+          path: |
+            build.log
+            test.log
+          if-no-files-found: ignore
+          retention-days: 14
+
+  quick-checks:
+    name: Quick checks (no Mac needed)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: The kiosk profile is well-formed XML
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq libxml2-utils
+          xmllint --noout Profiles/*.mobileconfig
+
+      - name: The Python tools have no syntax errors
+        run: python3 -m py_compile tools/make_sample_decks.py tools/make_demo_video.py
+
+      - name: project.yml is valid YAML
+        run: python3 -c "import yaml,sys; yaml.safe_load(open('project.yml')); print('project.yml parses')"
+
+      - name: No em dashes in the documents
+        run: |
+          if grep -rl $'\xe2\x80\x94' README.md docs/*.md; then echo "em dash found"; exit 1; fi
+          echo "none"
