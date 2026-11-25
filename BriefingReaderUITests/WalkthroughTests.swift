@@ -119,6 +119,7 @@ final class WalkthroughTests: XCTestCase {
         }
 
         mark("manage")                    // how the assistant loads and wipes content
+        for _ in 0..<6 { app.swipeDown() }   // the library may be scrolled; the Manage button is in the header
         let manage = app.buttons["Manage content"]
         if manage.waitForExistence(timeout: 5) {
             manage.tap()
@@ -131,6 +132,7 @@ final class WalkthroughTests: XCTestCase {
         }
 
         mark("search")                    // find a word in every document on the iPad
+        for _ in 0..<6 { app.swipeDown() }
         let search = app.buttons["Search all documents"]
         if search.waitForExistence(timeout: 5) {
             search.tap()
