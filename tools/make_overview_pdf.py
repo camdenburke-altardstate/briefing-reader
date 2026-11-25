@@ -216,12 +216,12 @@ class ArchDiagram(Flowable):
     def __init__(self, width):
         super().__init__()
         self.width = width
-        self.height = 205
+        self.height = 182
 
     def wrap(self, aw, ah):
         return self.width, self.height
 
-    def layer(self, y, label, items, h=52):
+    def layer(self, y, label, items, h=46):
         c = self.canv
         c.setFillColor(INK)
         c.roundRect(0, y, 92, h, 5, stroke=0, fill=1)
@@ -248,10 +248,10 @@ class ArchDiagram(Flowable):
                 yy -= 9.5
 
     def draw(self):
-        self.layer(150, "VIEWS", [("LibraryView", "agenda, cards|Continue row"), ("ReaderView", "PDF, spreads|bar, scrubber"),
+        self.layer(136, "VIEWS", [("LibraryView", "agenda, cards|Continue row"), ("ReaderView", "PDF, spreads|bar, scrubber"),
                                   ("ViewerScreen", "photo, video|router"), ("ManageView", "load, wipe|PIN"),
                                   ("Search + Notes", "all documents|per meeting")])
-        self.layer(80, "MODEL", [("LibraryStore", "scans folders|progress, bookmarks"), ("ContentManager", "import, remove|PIN, naming"),
+        self.layer(73, "MODEL", [("LibraryStore", "scans folders|progress, bookmarks"), ("ContentManager", "import, remove|PIN, naming"),
                                  ("MarkupStore", "Pencil strokes|per page"), ("ThumbnailCache", "covers, photos|downsampled")])
         self.layer(10, "APP", [("BriefingReaderApp", "starts the library"), ("Branding", "colors, fonts|reading tones"),
                                ("Kiosk", "asks iPadOS for|Single App Mode")])
@@ -434,7 +434,7 @@ def build():
     s.append(PageBreak())
 
     # ===== 5 screens 2
-    s += page_title("The screens", "Long documents, other content, and the assistant's tools")
+    s += page_title("The screens", "Long documents, media and the assistant's tools")
     s.append(gallery([shot_cell("31-long-report-after-turns", 262, "A 320-page report, two pages at a time"),
                       shot_cell("40-slide-deck-landscape", 262, "A slide deck fills the width")], [CW / 2, CW / 2]))
     s.append(Spacer(1, 8))
@@ -478,7 +478,7 @@ def build():
     s += page_title("Tech stack", "What it is built with")
     T = [[hdr("Layer"), hdr("Choice"), hdr("Used for")],
          [P("<b>Language</b>", cell), P("Swift, Swift 5 language mode (Xcode 16.4)", cell), P("The whole app. Native, no web view, no third-party libraries.", cell)],
-         [P("<b>Interface</b>", cell), P("SwiftUI, iPadOS 16 and later, iPad only", cell), P("Library, agenda, sheets, reader bar. UIKit is bridged in for the PDF view, photo zoom, video player and file picker.", cell)],
+         [P("<b>Interface</b>", cell), P("SwiftUI, iPadOS 16 and later, iPad only", cell), P("Library, agenda, sheets, reader bar. UIKit bridges the PDF view, photo zoom, player and file picker.", cell)],
          [P("<b>PDF</b>", cell), P("PDFKit", cell), P("Page rendering, two-up spreads, outline, text search, page overlays for handwriting.", cell)],
          [P("<b>Handwriting</b>", cell), P("PencilKit", cell), P("A drawing layer per page, saved as small JSON files.", cell)],
          [P("<b>Media</b>", cell), P("AVKit, AVFoundation, ImageIO", cell), P("Video and audio, cover frames, memory-safe photo downsizing.", cell)],
