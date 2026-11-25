@@ -92,8 +92,49 @@ jobs:
             -configuration Debug \
             -destination "id=${{ steps.sim.outputs.id }}" \
             -resultBundlePath UITestResults.xcresult \
+            -skip-testing:BriefingReaderUITests/WalkthroughTests \
             CODE_SIGNING_ALLOWED=NO \
             2>&1 | tee ui.log
+
+      # Walk-through video: records the simulator screen while WalkthroughTests drives the app, then
+      # keeps the raw video and the step times (to caption it later). Never fails the build.
+      - name: Record a walkthrough video
+        continue-on-error: true
+        timeout-minutes: 15
+        run: |
+          ID="${{ steps.sim.outputs.id }}"
+          rm -rf /tmp/BriefingWalk && mkdir -p /tmp/BriefingWalk
+          xcrun simctl uninstall "$ID" com.altardstate.briefingreader || true   # start from an empty iPad
+          xcrun simctl bootstatus "$ID" -b
+          python3 -c "import time; print(time.time())" > /tmp/BriefingWalk/record-start.txt
+          xcrun simctl io "$ID" recordVideo --codec=h264 --force /tmp/BriefingWalk/walkthrough-raw.mp4 > /tmp/BriefingWalk/rec.log 2>&1 &
+          REC=$!
+          sleep 4
+          xcodebuild test \
+            -project BriefingReader.xcodeproj \
+            -scheme BriefingReaderUI \
+            -configuration Debug \
+            -destination "id=$ID" \
+            -only-testing:BriefingReaderUITests/WalkthroughTests \
+            CODE_SIGNING_ALLOWED=NO \
+            2>&1 | tee /tmp/BriefingWalk/walk.log || true
+          kill -INT $REC || true
+          wait $REC || true
+          sleep 2
+          ls -l /tmp/BriefingWalk
+
+      - name: Keep the walkthrough video
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: walkthrough
+          path: |
+            /tmp/BriefingWalk/walkthrough-raw.mp4
+            /tmp/BriefingWalk/markers.txt
+            /tmp/BriefingWalk/record-start.txt
+            /tmp/BriefingWalk/walk.log
+          if-no-files-found: ignore
+          retention-days: 14
 
       # The simulator hands the test a sideways, cropped picture in landscape. The whole-screen capture is
       # complete but turned 90 degrees, so turn those upright and keep them under the plain names.
