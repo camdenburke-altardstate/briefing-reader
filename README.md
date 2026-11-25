@@ -210,6 +210,7 @@ docs/DEPLOYMENT.md                    Step by step: build, supervise, install, l
 docs/MEETING-NEEDS.md                 What executives need in a meeting and what is built, not built, and why
 docs/ASSISTANT-GUIDE.md               Plain steps for loading a meeting from a USB drive and clearing it afterwards
 docs/FIRST-BUILD-CHECKLIST.md          The Mac build and device test, in order, with fallbacks and what to send back
+docs/Briefing-Reader-Overview.pdf       Purpose, UX flow, features and tech stack, with real screenshots (8 pages)
 docs/CLOUD-BUILD.md                    Compile and test the Swift on a cloud Mac (GitHub Actions), no Mac of your own
 docs/ACTION-PLAN.md                   The original plan's table with real status, plus decisions still open
 docs/EXECUTIVE-QUICKSTART.md          One-page guide for the executives (fill in the IT contact)
