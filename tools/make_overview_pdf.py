@@ -325,6 +325,8 @@ def hdr(text):
 def status(kind):
     if kind == "ok":
         return Paragraph('<font color="#2e7d4f"><b>Seen working</b></font> in the simulator', cell)
+    if kind == "code":
+        return Paragraph('<font color="#2e7d4f"><b>Checked</b></font> in the code', cell)
     if kind == "part":
         return Paragraph('<font color="#a35f00"><b>Built</b></font>, only partly exercised', cell)
     return Paragraph('<font color="#a35f00"><b>Built</b></font>, not yet tested', cell)
@@ -420,7 +422,7 @@ def build():
                   "<b>Zoom:</b> pinch to 4 times; while zoomed, taps only show or hide the tools so a pan never turns the page."]) + [PageBreak()]
 
     # ===== 4 screens 1
-    s += page_title("The screens", "Library and reading, as captured from the running app")
+    s += page_title("The screens", "Library and reading, from the running app")
     s.append(gallery([shot_cell("11-board-book-landscape-spread", 262, "Landscape: two facing pages (pages 2-3 of 31)"),
                       shot_cell("13-board-book-landscape-bar", 262, "Tap the middle: contents, search, pen, bookmark, notes, tone; page slider below")],
                      [CW / 2, CW / 2]))
@@ -446,7 +448,7 @@ def build():
 
     # ===== 6 features
     s += page_title("Features", "What it can do, and how sure we are")
-    s += [P("Status words: <font color='#2e7d4f'><b>Seen working</b></font> means it was visible in the cloud simulator run. "
+    s += [P("Status words: <font color='#2e7d4f'><b>Seen working</b></font> means it was visible in the cloud simulator run; <font color='#2e7d4f'><b>Checked</b></font> means confirmed by reading the code. "
             "<font color='#a35f00'><b>Built</b></font> means the code exists, passes the compile and logic tests, and has not been seen working on screen.", small),
           Spacer(1, 5)]
     F = [[hdr("Area"), hdr("Feature"), hdr("Status")],
@@ -462,10 +464,10 @@ def build():
          [P("<b>Search</b>", cell), P("One search across the text of every PDF and the names of photos and videos; opens at the right page", cell), status("part")],
          [P("<b>Markup</b>", cell), P("Apple Pencil handwriting on any page, kept per page, a finger still turns pages", cell), status("none")],
          [P("<b>Loading</b>", cell), P("Manage screen: choose files or a folder from USB or SD, copy with progress, replace updated files safely", cell), status("part")],
-         ["", P("Remove a meeting, remove finished meetings, clear everything; free-space readout", cell), status("ok")],
+         ["", P("Remove a meeting, remove finished meetings, clear everything; free-space readout (the list and sizes were seen; the removals were not run)", cell), status("part")],
          ["", P("Optional PIN for Manage, with lockout after repeated wrong tries", cell), status("part")],
          [P("<b>Security</b>", cell), P("Single App Mode lock (needs a supervised iPad), restrictions profile: no AirDrop, screenshots, app removal", cell), status("none")],
-         ["", P("No network code; files stay in the app; Finder file sharing for IT retrieval", cell), status("ok")],
+         ["", P("No network use at all (the code calls no networking APIs); files stay in the app; Finder file sharing for IT retrieval", cell), status("code")],
          [P("<b>Brand</b>", cell), P("Altar'd State wordmark and palette, consistent type, placeholder app icon pending Marketing sign-off", cell), status("ok")]]
     s += [table(F, [62, CW - 62 - 120, 120], zebra=False)]
     s += [Spacer(1, 8), P("Still to build", h2)]
@@ -475,8 +477,8 @@ def build():
     # ===== 7 tech stack
     s += page_title("Tech stack", "What it is built with")
     T = [[hdr("Layer"), hdr("Choice"), hdr("Used for")],
-         [P("<b>Language</b>", cell), P("Swift 5 (Xcode 16.4)", cell), P("The whole app. Native, no web view, no third-party libraries.", cell)],
-         [P("<b>Interface</b>", cell), P("SwiftUI, iPadOS 16 and later, iPad only", cell), P("Library, agenda, sheets, reader bar. UIKit is bridged in only for the PDF view.", cell)],
+         [P("<b>Language</b>", cell), P("Swift, Swift 5 language mode (Xcode 16.4)", cell), P("The whole app. Native, no web view, no third-party libraries.", cell)],
+         [P("<b>Interface</b>", cell), P("SwiftUI, iPadOS 16 and later, iPad only", cell), P("Library, agenda, sheets, reader bar. UIKit is bridged in for the PDF view, photo zoom, video player and file picker.", cell)],
          [P("<b>PDF</b>", cell), P("PDFKit", cell), P("Page rendering, two-up spreads, outline, text search, page overlays for handwriting.", cell)],
          [P("<b>Handwriting</b>", cell), P("PencilKit", cell), P("A drawing layer per page, saved as small JSON files.", cell)],
          [P("<b>Media</b>", cell), P("AVKit, AVFoundation, ImageIO", cell), P("Video and audio, cover frames, memory-safe photo downsizing.", cell)],
