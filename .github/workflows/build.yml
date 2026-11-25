@@ -99,6 +99,9 @@ jobs:
       # Walk-through video: records the simulator screen while WalkthroughTests drives the app, then
       # keeps the raw video and the step times (to caption it later). Never fails the build.
       - name: Record a walkthrough video
+        # Off for normal pushes: on the cloud runner the recording is slow and choppy (about 6 frames a second)
+        # and adds 7 minutes. Run the workflow by hand (Run workflow button) to try it again.
+        if: github.event_name == 'workflow_dispatch'
         continue-on-error: true
         timeout-minutes: 15
         run: |

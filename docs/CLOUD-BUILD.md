@@ -27,6 +27,15 @@ How it gets the sample decks in: debug builds only read a `-seedFrom` folder at 
 That file is compiled out of Release builds, so the iPad version has no such hook. A problem in this step never fails
 the build; you just get fewer pictures. The run takes about 16 minutes.
 
+## Videos and the overview PDF
+
+- `tools/make_slideshow_video.py` builds the captioned walkthrough video from the run's screenshots
+  (`Demo/Briefing-Reader-Walkthrough.mp4`). This is the reliable way to get a video.
+- A live screen recording is also wired in (`WalkthroughTests`, `tools/make_walkthrough_video.py`), but it only runs when you
+  press **Run workflow** by hand. On the cloud runner it came out choppy (about 6 frames a second), sideways, and the test
+  stalled, so it is not used. For true motion, screen-record the simulator on a Mac or a real iPad.
+- `tools/make_overview_pdf.py` builds `docs/Briefing-Reader-Overview.pdf` from the screenshots in `docs/screens`.
+
 ## What it proves, and what it does not
 
 | It proves | It does not prove |
